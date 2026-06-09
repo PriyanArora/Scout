@@ -9,15 +9,54 @@ export type Database = {
           id: string;
           org_id: string;
           status: string;
-          next_node: string;
+          next_node: string | null;
           submitted_url: string;
           normalized_url: string;
           idempotency_key: string;
+          error: Record<string, unknown> | null;
           created_at: string;
         };
         Insert: Omit<Database["public"]["Tables"]["runs"]["Row"], "id" | "created_at"> & {
           id?: string;
         };
+      };
+      run_steps: {
+        Row: {
+          id: string;
+          run_id: string;
+          node: string;
+          status: string;
+          duration_ms: number | null;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["run_steps"]["Row"], "id" | "created_at">;
+      };
+      reports: {
+        Row: {
+          id: string;
+          run_id: string;
+          version: number;
+          status: string;
+          summary: string;
+          business_profile: Record<string, unknown>;
+          opportunities: unknown[];
+          ranked: unknown[];
+          requirements: Record<string, unknown>;
+          solution_design: Record<string, unknown>;
+          discovery_questions: unknown[];
+          top_workflow: Record<string, unknown>;
+          playbook: string;
+          readiness: Record<string, unknown>;
+          share_token_hash: string | null;
+          share_expires_at: string | null;
+          share_revoked_at: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["reports"]["Row"], "id" | "created_at">;
+      };
+      profiles: {
+        Row: { id: string; org_id: string; role: string; full_name: string | null };
+        Insert: Omit<Database["public"]["Tables"]["profiles"]["Row"], "id">;
       };
     };
     Functions: Record<string, unknown>;
