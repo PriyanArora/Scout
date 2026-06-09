@@ -1,0 +1,153 @@
+{
+  "name": "Scout Companion Lead Loop",
+  "meta": {
+    "templateId": "scout-companion-lead-loop",
+    "n8nVersion": "1.88.0"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "scout-db-webhook",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "__NODE_ID_1__",
+      "name": "DB Webhook (new client)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "__WEBHOOK_ID__"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build Scout discovery payload from the DB webhook event\n// Supabase DB webhook sends: { type, table, record, old_record, schema }\nconst event = $input.first().json;\nconst record = event.record || event;\n\nconst url = record.url || record.normalized_url || '';\nconst notes = record.notes || '';\nconst orgId = record.org_id || '';\n\nif (!url) throw new Error('No URL in event payload');\n\nreturn [{ json: { url, notes, orgId, clientId: record.id, receivedAt: new Date().toISOString() } }];"
+      },
+      "id": "__NODE_ID_2__",
+      "name": "Build Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sign the webhook body with HMAC-SHA256\n// This node computes the signature using the Web Crypto API (available in n8n Code node)\nconst payload = $input.first().json;\nconst rawBody = JSON.stringify({ url: payload.url, notes: payload.notes });\nconst secret = $env['SCOUT_WEBHOOK_SECRET'];\nconst ts = Math.floor(Date.now() / 1000);\n\nasync function hmacSha256(key, message) {\n  const enc = new TextEncoder();\n  const cryptoKey = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);\n  const sig = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(message));\n  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,'0')).join('');\n}\n\nconst hex = await hmacSha256(secret, `v0:${ts}:${rawBody}`);\nconst signature = `v0=${hex}`;\n\nreturn [{ json: { ...payload, rawBody, signature, timestamp: ts } }];"
+      },
+      "id": "__NODE_ID_3__",
+      "name": "Sign Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "__SCOUT_WEBHOOK_URL__",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-scout-signature", "value": "={{ $json.signature }}" },
+            { "name": "x-scout-timestamp", "value": "={{ $json.timestamp }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ $json.rawBody }}"
+      },
+      "id": "__NODE_ID_4__",
+      "name": "POST to Scout",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the run_id from Scout's 202 response\nconst resp = $input.first().json;\nconst runId = resp.run_id;\nif (!runId) throw new Error('No run_id in Scout response');\nreturn [{ json: { runId, acceptedAt: new Date().toISOString() } }];"
+      },
+      "id": "__NODE_ID_5__",
+      "name": "Parse Run ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "amount": 90,
+        "unit": "seconds"
+      },
+      "id": "__NODE_ID_6__",
+      "name": "Wait 90s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "__SUPABASE_URL__/rest/v1/reports?run_id=eq.={{ $json.runId }}&select=id,summary,ranked,share_token_hash&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer __SUPABASE_SERVICE_ROLE_KEY__" },
+            { "name": "apikey", "value": "__SUPABASE_SERVICE_ROLE_KEY__" }
+          ]
+        }
+      },
+      "id": "__NODE_ID_7__",
+      "name": "Fetch Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format summary for Slack notification\nconst reports = $input.first().json;\nconst report = Array.isArray(reports) ? reports[0] : reports;\nif (!report) return [{ json: { message: 'Run still in progress — check Scout dashboard.' } }];\n\nconst ranked = report.ranked || [];\nconst topOpp = ranked[0];\nconst shareUrl = report.share_token_hash\n  ? `${$env['PUBLIC_APP_URL']}/share/${report.share_token_hash}`\n  : `${$env['PUBLIC_APP_URL']}/report/${$('Parse Run ID').first().json.runId}`;\n\nconst msg = [\n  `*Scout Discovery Complete* :mag:`,\n  `*Summary:* ${report.summary?.slice(0, 300) ?? 'N/A'}`,\n  topOpp ? `*Top opportunity:* ${topOpp.title} (${topOpp.pillar}, impact ${topOpp.impactScore}/5)` : '',\n  `*View report:* ${shareUrl}`\n].filter(Boolean).join('\\n');\n\nreturn [{ json: { message: msg, shareUrl } }];"
+      },
+      "id": "__NODE_ID_8__",
+      "name": "Format Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": { "__rl": true, "value": "__SLACK_CHANNEL_ID__", "mode": "id" },
+        "text": "={{ $json.message }}"
+      },
+      "id": "__NODE_ID_9__",
+      "name": "Notify Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [2000, 300],
+      "credentials": { "slackApi": { "id": "__CRED_SLACK_API__", "name": "Slack account" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ { \"status\": \"accepted\", \"run_id\": $('Parse Run ID').first().json.runId } }"
+      },
+      "id": "__NODE_ID_10__",
+      "name": "Respond 202",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2220, 300]
+    }
+  ],
+  "connections": {
+    "DB Webhook (new client)": { "main": [[{ "node": "Build Payload", "type": "main", "index": 0 }]] },
+    "Build Payload": { "main": [[{ "node": "Sign Request", "type": "main", "index": 0 }]] },
+    "Sign Request": { "main": [[{ "node": "POST to Scout", "type": "main", "index": 0 }]] },
+    "POST to Scout": { "main": [[{ "node": "Parse Run ID", "type": "main", "index": 0 }]] },
+    "Parse Run ID": { "main": [[{ "node": "Wait 90s", "type": "main", "index": 0 }]] },
+    "Wait 90s": { "main": [[{ "node": "Fetch Report", "type": "main", "index": 0 }]] },
+    "Fetch Report": { "main": [[{ "node": "Format Summary", "type": "main", "index": 0 }]] },
+    "Format Summary": { "main": [[{ "node": "Notify Slack", "type": "main", "index": 0 }]] },
+    "Notify Slack": { "main": [[{ "node": "Respond 202", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "pinData": {}
+}
