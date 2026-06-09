@@ -133,6 +133,29 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [2220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Error handler — log failure and post a Slack alert\nconst error = $input.first().json;\nconst runId = $('Parse Run ID').first()?.json?.runId ?? 'unknown';\nconst msg = `*Scout pipeline error* :warning:\\nRun ID: ${runId}\\nError: ${error.message ?? JSON.stringify(error)}`;\nreturn [{ json: { message: msg } }];"
+      },
+      "id": "__NODE_ID_11__",
+      "name": "Handle Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 520]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": { "__rl": true, "value": "__SLACK_CHANNEL_ID__", "mode": "id" },
+        "text": "={{ $json.message }}"
+      },
+      "id": "__NODE_ID_12__",
+      "name": "Alert Slack on Error",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1560, 520],
+      "credentials": { "slackApi": { "id": "__CRED_SLACK_API__", "name": "Slack account" } }
     }
   ],
   "connections": {
@@ -144,8 +167,11 @@
     "Wait 90s": { "main": [[{ "node": "Fetch Report", "type": "main", "index": 0 }]] },
     "Fetch Report": { "main": [[{ "node": "Format Summary", "type": "main", "index": 0 }]] },
     "Format Summary": { "main": [[{ "node": "Notify Slack", "type": "main", "index": 0 }]] },
-    "Notify Slack": { "main": [[{ "node": "Respond 202", "type": "main", "index": 0 }]] }
+    "Notify Slack": { "main": [[{ "node": "Respond 202", "type": "main", "index": 0 }]] },
+    "Handle Error": { "main": [[{ "node": "Alert Slack on Error", "type": "main", "index": 0 }]] }
   },
+  "errorWorkflow": "",
+  "onError": "stopWorkflow",
   "active": false,
   "settings": { "executionOrder": "v1" },
   "staticData": null,
