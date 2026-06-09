@@ -1,0 +1,80 @@
+{
+  "name": "Form to CRM",
+  "meta": {
+    "templateId": "scout-form-to-crm",
+    "n8nVersion": "1.88.0"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "__FORM_TITLE__",
+        "formDescription": "__FORM_DESCRIPTION__",
+        "formFields": {
+          "values": [
+            { "fieldLabel": "Full Name", "fieldType": "text", "requiredField": true },
+            { "fieldLabel": "Email", "fieldType": "email", "requiredField": true },
+            { "fieldLabel": "Company", "fieldType": "text", "requiredField": true },
+            { "fieldLabel": "Message", "fieldType": "textarea", "requiredField": false }
+          ]
+        },
+        "responseMode": "lastNode"
+      },
+      "id": "__NODE_ID_1__",
+      "name": "Form Trigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "__WEBHOOK_ID__"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map form fields to CRM contact schema\nconst f = $input.first().json;\nreturn [{\n  json: {\n    firstName: (f['Full Name'] || '').split(' ')[0],\n    lastName: (f['Full Name'] || '').split(' ').slice(1).join(' '),\n    email: f['Email'],\n    company: f['Company'],\n    notes: f['Message'] || '',\n    source: '__FORM_TITLE__',\n    createdAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "__NODE_ID_2__",
+      "name": "Map to CRM Schema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "__CRM_API_ENDPOINT__",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Authorization", "value": "Bearer __CRM_API_KEY__" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify($json) }}"
+      },
+      "id": "__NODE_ID_3__",
+      "name": "Create CRM Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Thank you! We will be in touch shortly."
+      },
+      "id": "__NODE_ID_4__",
+      "name": "Confirm Submission",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Form Trigger": { "main": [[{ "node": "Map to CRM Schema", "type": "main", "index": 0 }]] },
+    "Map to CRM Schema": { "main": [[{ "node": "Create CRM Contact", "type": "main", "index": 0 }]] },
+    "Create CRM Contact": { "main": [[{ "node": "Confirm Submission", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "pinData": {}
+}

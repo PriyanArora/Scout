@@ -1,0 +1,93 @@
+{
+  "name": "Scheduled Scrape, Summarise & Notify",
+  "meta": {
+    "templateId": "scout-scheduled-scrape-summarize-notify",
+    "n8nVersion": "1.88.0"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "__CRON_SCHEDULE__" }]
+        }
+      },
+      "id": "__NODE_ID_1__",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "__TARGET_URL__",
+        "options": { "timeout": 30000 }
+      },
+      "id": "__NODE_ID_2__",
+      "name": "Fetch Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract main content from HTML\nconst html = $input.first().json.data || '';\nconst text = html.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').slice(0, 4000);\nreturn [{ json: { content: text, fetchedAt: new Date().toISOString() } }];"
+      },
+      "id": "__NODE_ID_3__",
+      "name": "Extract Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "__SCOUT_WEBHOOK_URL__",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-scout-signature", "value": "__HMAC_SIGNATURE__" },
+            { "name": "x-scout-timestamp", "value": "={{ Date.now() }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "url", "value": "__TARGET_URL__" },
+            { "name": "notes", "value": "={{ $json.content.slice(0, 500) }}" }
+          ]
+        }
+      },
+      "id": "__NODE_ID_4__",
+      "name": "Trigger Scout Discovery",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": { "__rl": true, "value": "__SLACK_CHANNEL_ID__", "mode": "id" },
+        "text": "Scout discovery triggered for __TARGET_URL__\nRun ID: {{ $json.run_id }}"
+      },
+      "id": "__NODE_ID_5__",
+      "name": "Notify Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "credentials": { "slackApi": { "id": "__CRED_SLACK_API__", "name": "Slack account" } }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Fetch Page", "type": "main", "index": 0 }]] },
+    "Fetch Page": { "main": [[{ "node": "Extract Content", "type": "main", "index": 0 }]] },
+    "Extract Content": { "main": [[{ "node": "Trigger Scout Discovery", "type": "main", "index": 0 }]] },
+    "Trigger Scout Discovery": { "main": [[{ "node": "Notify Slack", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "pinData": {}
+}

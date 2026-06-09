@@ -1,0 +1,76 @@
+{
+  "name": "Webhook Enrich & Store",
+  "meta": {
+    "templateId": "scout-webhook-enrich-store",
+    "n8nVersion": "1.88.0"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "__WEBHOOK_PATH__",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "__NODE_ID_1__",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "__WEBHOOK_ID__"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalise and enrich incoming payload\nconst payload = $input.first().json;\nreturn [{\n  json: {\n    url: (payload.url || '').trim().toLowerCase(),\n    notes: payload.notes || '',\n    receivedAt: new Date().toISOString(),\n    source: 'webhook'\n  }\n}];"
+      },
+      "id": "__NODE_ID_2__",
+      "name": "Normalise Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "__SCOUT_WEBHOOK_URL__",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-scout-signature", "value": "__HMAC_SIGNATURE__" },
+            { "name": "x-scout-timestamp", "value": "={{ Date.now() }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify($json) }}"
+      },
+      "id": "__NODE_ID_3__",
+      "name": "Send to Scout",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'accepted', run_id: $json.run_id }) }}"
+      },
+      "id": "__NODE_ID_4__",
+      "name": "Respond 202",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Normalise Payload", "type": "main", "index": 0 }]] },
+    "Normalise Payload": { "main": [[{ "node": "Send to Scout", "type": "main", "index": 0 }]] },
+    "Send to Scout": { "main": [[{ "node": "Respond 202", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "pinData": {}
+}

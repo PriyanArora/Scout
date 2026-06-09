@@ -1,0 +1,132 @@
+{
+  "name": "RAG FAQ Skeleton",
+  "meta": {
+    "templateId": "scout-rag-faq-skeleton",
+    "n8nVersion": "1.88.0"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "__WEBHOOK_PATH__",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "__NODE_ID_1__",
+      "name": "Question Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "__WEBHOOK_ID__"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build embedding request from incoming question\nconst payload = $input.first().json;\nconst question = (payload.question || '').trim();\nif (!question) throw new Error('Missing question field');\nreturn [{ json: { question, sessionId: payload.sessionId || crypto.randomUUID() } }];"
+      },
+      "id": "__NODE_ID_2__",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "__EMBEDDING_API_URL__",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer __EMBEDDING_API_KEY__" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ input: $json.question, model: '__EMBEDDING_MODEL__' }) }}"
+      },
+      "id": "__NODE_ID_3__",
+      "name": "Embed Question",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "__VECTOR_STORE_SEARCH_URL__",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer __VECTOR_STORE_KEY__" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ vector: $json.data[0].embedding, topK: 5, namespace: '__VECTOR_NAMESPACE__' }) }}"
+      },
+      "id": "__NODE_ID_4__",
+      "name": "Retrieve Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compile retrieved chunks into a context block\nconst matches = $input.first().json.matches || [];\nconst context = matches.map((m, i) => `[${i+1}] ${m.metadata?.text || ''}`).join('\\n\\n');\nconst question = $('Validate Input').first().json.question;\nreturn [{ json: { question, context, sessionId: $('Validate Input').first().json.sessionId } }];"
+      },
+      "id": "__NODE_ID_5__",
+      "name": "Build Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "__LLM_API_URL__",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer __LLM_API_KEY__" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ model: '__LLM_MODEL__', max_tokens: 512, messages: [{ role: 'user', content: 'Context:\\n' + $json.context + '\\n\\nQuestion: ' + $json.question }] }) }}"
+      },
+      "id": "__NODE_ID_6__",
+      "name": "Generate Answer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ answer: $json.content[0].text, sessionId: $('Build Context').first().json.sessionId }) }}"
+      },
+      "id": "__NODE_ID_7__",
+      "name": "Return Answer",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Question Webhook": { "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]] },
+    "Validate Input": { "main": [[{ "node": "Embed Question", "type": "main", "index": 0 }]] },
+    "Embed Question": { "main": [[{ "node": "Retrieve Context", "type": "main", "index": 0 }]] },
+    "Retrieve Context": { "main": [[{ "node": "Build Context", "type": "main", "index": 0 }]] },
+    "Build Context": { "main": [[{ "node": "Generate Answer", "type": "main", "index": 0 }]] },
+    "Generate Answer": { "main": [[{ "node": "Return Answer", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "pinData": {}
+}
