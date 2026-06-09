@@ -13,6 +13,7 @@ out/
 dist/
 build/
 coverage/
+*.tsbuildinfo
 
 # Vercel
 .vercel/
@@ -46,6 +47,9 @@ Thumbs.db
 claude/
 CLAUDE.md
 SPEC.md
+README.md
+docs/
+.github/
 
 # Generated exports
 exports/

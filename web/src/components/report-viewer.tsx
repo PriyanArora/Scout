@@ -76,7 +76,6 @@ export function ReportViewer({ report, runId }: ReportViewerProps) {
     }
   }
 
-  const topOpp = opportunities[0] ?? null;
   const topWorkflow = report.top_workflow as Record<string, unknown> | null;
   const discoveryQuestions = report.discovery_questions as string[];
   const readiness = report.readiness as Record<string, unknown> | null;

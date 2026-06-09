@@ -14,7 +14,7 @@ type FetchMock = ReturnType<typeof vi.fn>;
 
 function mockFetch(...responses: Array<{ ok: boolean; status?: number; body: unknown }>): FetchMock {
   const mock = vi.fn();
-  responses.forEach((r, i) => {
+  responses.forEach((r) => {
     mock.mockResolvedValueOnce({
       ok: r.ok,
       status: r.status ?? (r.ok ? 200 : 500),
