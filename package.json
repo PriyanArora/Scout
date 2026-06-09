@@ -1,0 +1,21 @@
+{
+  "name": "scout",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI discovery agent for NorthBound Advisory consulting workflows.",
+  "packageManager": "npm@11.11.0",
+  "workspaces": [
+    "agent",
+    "web",
+    "mcp"
+  ],
+  "scripts": {
+    "lint": "npm --workspaces --if-present run lint",
+    "typecheck": "npm --workspaces --if-present run typecheck",
+    "test": "npm --workspaces --if-present run test",
+    "format:check": "npm --workspaces --if-present run format:check"
+  },
+  "dependencies": {
+    "likit-claude": "^1.0.2"
+  }
+}

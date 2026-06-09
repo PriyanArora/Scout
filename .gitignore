@@ -1,0 +1,52 @@
+# Secrets and local environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+dist/
+build/
+coverage/
+
+# Vercel
+.vercel/
+
+# Supabase local state
+.branches/
+.temp/
+supabase/.branches/
+supabase/.temp/
+supabase/.shadow/
+supabase/.db/
+supabase/.seed/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local assistant/spec context
+.agents/
+.claude/
+.codex/
+claude/
+CLAUDE.md
+SPEC.md
+
+# Generated exports
+exports/
+*.pdf
