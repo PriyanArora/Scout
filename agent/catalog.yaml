@@ -1,2 +1,474 @@
-# Seeded in P3 with NorthBound-grounded tools.
-tools: []
+tools:
+  - id: microsoft-365-copilot
+    name: Microsoft 365 Copilot
+    category: AI productivity
+    pillars: ["Operations & Efficiency", "Customer Experience & Marketing"]
+    what_it_does: Adds AI assistance across Microsoft 365 workspaces.
+    best_for: ["knowledge work acceleration", "meeting summaries", "document drafting"]
+    integrates_with: ["Teams", "Outlook", "SharePoint"]
+    effort: 2
+    cost_tier: paid
+    notes: Best when the client is already Microsoft 365-heavy.
+    enabled: true
+  - id: copilot-studio
+    name: Copilot Studio
+    category: Agent builder
+    pillars: ["Customer Experience & Marketing", "Operations & Efficiency"]
+    what_it_does: Builds enterprise copilots and conversational workflows.
+    best_for: ["internal copilots", "customer self-service", "FAQ assistants"]
+    integrates_with: ["Microsoft 365", "Power Platform", "Dataverse"]
+    effort: 3
+    cost_tier: paid
+    notes: Use for Microsoft-native agent surfaces.
+    enabled: true
+  - id: power-automate
+    name: Power Automate
+    category: Automation
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Automates Microsoft-centric workflows and approvals.
+    best_for: ["approval flows", "document routing", "Teams alerts"]
+    integrates_with: ["SharePoint", "Outlook", "Dataverse", "Teams"]
+    effort: 2
+    cost_tier: paid
+    notes: Primary Microsoft workflow option.
+    enabled: true
+  - id: power-apps
+    name: Power Apps
+    category: Low-code app
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Creates lightweight internal business apps.
+    best_for: ["intake apps", "field forms", "simple CRUD workflows"]
+    integrates_with: ["Dataverse", "SharePoint", "Power Automate"]
+    effort: 3
+    cost_tier: paid
+    notes: Good for consultant-approved internal tooling.
+    enabled: true
+  - id: power-bi
+    name: Power BI
+    category: Analytics
+    pillars: ["Data & Decision Intelligence"]
+    what_it_does: Builds dashboards and semantic business reporting.
+    best_for: ["KPI reporting", "executive dashboards", "operational analytics"]
+    integrates_with: ["Fabric", "Snowflake", "Excel"]
+    effort: 2
+    cost_tier: paid
+    notes: Pairs well with Microsoft data estates.
+    enabled: true
+  - id: microsoft-teams
+    name: Microsoft Teams
+    category: Collaboration
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Collaboration and notification surface for Microsoft organizations.
+    best_for: ["alerts", "approvals", "team workflows"]
+    integrates_with: ["Power Automate", "SharePoint", "Copilot"]
+    effort: 1
+    cost_tier: paid
+    notes: Use as notification and adoption channel.
+    enabled: true
+  - id: sharepoint
+    name: SharePoint
+    category: Content platform
+    pillars: ["Operations & Efficiency", "Cybersecurity & Risk Management"]
+    what_it_does: Stores documents, intranet content, and lists.
+    best_for: ["document workflows", "knowledge bases", "controlled document storage"]
+    integrates_with: ["Teams", "Power Automate", "Microsoft 365"]
+    effort: 2
+    cost_tier: paid
+    notes: Common source for document-heavy automations.
+    enabled: true
+  - id: dataverse
+    name: Dataverse
+    category: Data platform
+    pillars: ["Operations & Efficiency", "Data & Decision Intelligence"]
+    what_it_does: Managed data layer for Power Platform applications.
+    best_for: ["low-code databases", "Power Apps backends", "governed records"]
+    integrates_with: ["Power Apps", "Power Automate", "Power BI"]
+    effort: 3
+    cost_tier: paid
+    notes: Use when governance matters in Power Platform.
+    enabled: true
+  - id: microsoft-fabric
+    name: Microsoft Fabric
+    category: Data platform
+    pillars: ["Data & Decision Intelligence"]
+    what_it_does: Unified Microsoft analytics and lakehouse platform.
+    best_for: ["data warehousing", "BI modernization", "lakehouse analytics"]
+    integrates_with: ["Power BI", "Azure", "Microsoft 365"]
+    effort: 4
+    cost_tier: paid
+    notes: Microsoft-native analytics modernization path.
+    enabled: true
+  - id: azure-functions
+    name: Azure Functions
+    category: Serverless
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Runs event-driven functions in Azure.
+    best_for: ["API glue", "webhooks", "scheduled jobs"]
+    integrates_with: ["Azure", "Microsoft 365", "Power Platform"]
+    effort: 3
+    cost_tier: paid
+    notes: Good when client already has Azure controls.
+    enabled: true
+  - id: azure-ai
+    name: Azure AI
+    category: AI platform
+    pillars: ["Data & Decision Intelligence", "Customer Experience & Marketing"]
+    what_it_does: Enterprise AI services and model hosting in Azure.
+    best_for: ["AI apps", "document intelligence", "enterprise model governance"]
+    integrates_with: ["Azure Functions", "Microsoft Fabric"]
+    effort: 4
+    cost_tier: paid
+    notes: Use for Azure-governed AI deployments.
+    enabled: true
+  - id: aws-lambda
+    name: AWS Lambda
+    category: Serverless
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Runs serverless functions for event-driven automation.
+    best_for: ["API glue", "background jobs", "data processing"]
+    integrates_with: ["AWS", "API Gateway", "S3"]
+    effort: 3
+    cost_tier: paid
+    notes: Alternative for AWS-first clients.
+    enabled: true
+  - id: supabase
+    name: Supabase
+    category: Backend platform
+    pillars: ["Operations & Efficiency", "Data & Decision Intelligence"]
+    what_it_does: Provides Postgres, auth, storage, realtime, and Edge Functions.
+    best_for: ["fast prototypes", "internal apps", "agent persistence"]
+    integrates_with: ["Vercel", "n8n", "Postgres"]
+    effort: 3
+    cost_tier: free-tier
+    notes: Core Scout backend.
+    enabled: true
+  - id: vercel
+    name: Vercel
+    category: Frontend hosting
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Hosts Next.js web applications and thin APIs.
+    best_for: ["frontend deployments", "share pages", "serverless API routes"]
+    integrates_with: ["Supabase", "Next.js"]
+    effort: 2
+    cost_tier: free-tier
+    notes: Core Scout web host.
+    enabled: true
+  - id: netlify
+    name: Netlify
+    category: Frontend hosting
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Hosts static and serverless web projects.
+    best_for: ["marketing sites", "lightweight apps", "forms"]
+    integrates_with: ["GitHub", "serverless functions"]
+    effort: 2
+    cost_tier: free-tier
+    notes: Alternative frontend host when Vercel is not preferred.
+    enabled: true
+  - id: n8n
+    name: n8n
+    category: Automation
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Builds workflow automations with APIs and webhooks.
+    best_for: ["lead routing", "data sync", "notification workflows"]
+    integrates_with: ["Supabase", "Slack", "Teams", "HTTP APIs"]
+    effort: 3
+    cost_tier: free-software
+    notes: Primary generated workflow artifact in Scout.
+    enabled: true
+  - id: make
+    name: Make
+    category: Automation
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Visual automation platform for SaaS integrations.
+    best_for: ["SaaS workflow automation", "lightweight integrations"]
+    integrates_with: ["CRM", "Slack", "Google Workspace"]
+    effort: 2
+    cost_tier: paid
+    notes: Alternative no-code automation platform.
+    enabled: true
+  - id: zapier
+    name: Zapier
+    category: Automation
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Simple SaaS automation and trigger-action workflows.
+    best_for: ["quick SaaS zaps", "notification automations"]
+    integrates_with: ["CRM", "Slack", "Forms"]
+    effort: 1
+    cost_tier: paid
+    notes: Use for simple non-technical workflows.
+    enabled: true
+  - id: snowflake
+    name: Snowflake
+    category: Data platform
+    pillars: ["Data & Decision Intelligence"]
+    what_it_does: Cloud data warehouse and analytics platform.
+    best_for: ["data platform modernization", "governed analytics", "AI-ready data"]
+    integrates_with: ["Power BI", "dbt", "Microsoft Fabric"]
+    effort: 4
+    cost_tier: paid
+    notes: NorthBound is a Snowflake Services Partner.
+    enabled: true
+  - id: postgres
+    name: Postgres
+    category: Database
+    pillars: ["Data & Decision Intelligence", "Operations & Efficiency"]
+    what_it_does: Relational database for transactional and analytical workloads.
+    best_for: ["operational data stores", "app databases", "reporting marts"]
+    integrates_with: ["Supabase", "Metabase", "n8n"]
+    effort: 3
+    cost_tier: free-tier
+    notes: Strong default data store for prototypes.
+    enabled: true
+  - id: airtable
+    name: Airtable
+    category: Low-code database
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Spreadsheet-like database for business teams.
+    best_for: ["intake trackers", "lightweight CRM", "content operations"]
+    integrates_with: ["Zapier", "Make", "n8n"]
+    effort: 2
+    cost_tier: paid
+    notes: Good bridge from spreadsheet workflows.
+    enabled: true
+  - id: metabase
+    name: Metabase
+    category: Analytics
+    pillars: ["Data & Decision Intelligence"]
+    what_it_does: Open-source BI and dashboarding.
+    best_for: ["internal dashboards", "self-service analytics"]
+    integrates_with: ["Postgres", "Snowflake"]
+    effort: 2
+    cost_tier: free-software
+    notes: Useful when Power BI is not required.
+    enabled: true
+  - id: hex
+    name: Hex
+    category: Analytics
+    pillars: ["Data & Decision Intelligence"]
+    what_it_does: Collaborative notebooks and analytics apps.
+    best_for: ["data science workflows", "analytics apps"]
+    integrates_with: ["Snowflake", "dbt", "Python"]
+    effort: 3
+    cost_tier: paid
+    notes: Good for advanced analytics teams.
+    enabled: true
+  - id: claude-api
+    name: Claude API
+    category: LLM
+    pillars: ["Data & Decision Intelligence", "Operations & Efficiency"]
+    what_it_does: Claude models for structured reasoning and generation.
+    best_for: ["agent reasoning", "summarization", "structured output"]
+    integrates_with: ["LangGraph", "Supabase Edge Functions"]
+    effort: 3
+    cost_tier: paid
+    notes: Scout uses Claude for analysis.
+    enabled: true
+  - id: openai-api
+    name: OpenAI API
+    category: LLM
+    pillars: ["Data & Decision Intelligence"]
+    what_it_does: OpenAI models for AI app features.
+    best_for: ["chatbots", "classification", "generation"]
+    integrates_with: ["Azure OpenAI", "LangChain"]
+    effort: 3
+    cost_tier: paid
+    notes: Alternative model provider.
+    enabled: true
+  - id: langgraph
+    name: LangGraph
+    category: Agent framework
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Builds durable, stateful agent graphs.
+    best_for: ["multi-step agents", "checkpointed workflows"]
+    integrates_with: ["Claude API", "Postgres"]
+    effort: 4
+    cost_tier: free-software
+    notes: Scout agent orchestration layer.
+    enabled: true
+  - id: mcp
+    name: Model Context Protocol
+    category: AI integration
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Exposes tools and data sources to AI assistants.
+    best_for: ["Claude Code tools", "agent integrations"]
+    integrates_with: ["Claude Code", "TypeScript"]
+    effort: 3
+    cost_tier: free-software
+    notes: Scout ships an MCP server.
+    enabled: true
+  - id: pgvector
+    name: pgvector
+    category: Vector search
+    pillars: ["Data & Decision Intelligence"]
+    what_it_does: Adds vector embeddings to Postgres.
+    best_for: ["RAG prototypes", "semantic search"]
+    integrates_with: ["Supabase", "Postgres"]
+    effort: 3
+    cost_tier: free-software
+    notes: Future-ready RAG option.
+    enabled: true
+  - id: pinecone
+    name: Pinecone
+    category: Vector database
+    pillars: ["Data & Decision Intelligence"]
+    what_it_does: Managed vector search service.
+    best_for: ["production semantic search", "RAG at scale"]
+    integrates_with: ["OpenAI", "LangChain"]
+    effort: 3
+    cost_tier: paid
+    notes: Use when managed vector operations are needed.
+    enabled: true
+  - id: jina-reader
+    name: Jina Reader
+    category: Scraping
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Converts public web pages to markdown for analysis.
+    best_for: ["site discovery", "content extraction"]
+    integrates_with: ["HTTP clients", "LLM prompts"]
+    effort: 1
+    cost_tier: free
+    notes: Scout primary scrape path.
+    enabled: true
+  - id: firecrawl
+    name: Firecrawl
+    category: Scraping
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Scrapes and crawls web pages into clean markdown.
+    best_for: ["hard-to-scrape sites", "crawl jobs"]
+    integrates_with: ["LLM agents"]
+    effort: 2
+    cost_tier: free-tier
+    notes: Optional fallback behind env guard.
+    enabled: true
+  - id: tavily
+    name: Tavily
+    category: Search
+    pillars: ["Data & Decision Intelligence"]
+    what_it_does: Search API for AI applications.
+    best_for: ["web research", "source discovery"]
+    integrates_with: ["LLM agents"]
+    effort: 2
+    cost_tier: paid
+    notes: Optional research extension.
+    enabled: true
+  - id: dynamics-365
+    name: Dynamics 365
+    category: CRM/ERP
+    pillars: ["Customer Experience & Marketing", "Operations & Efficiency"]
+    what_it_does: Microsoft CRM and business applications suite.
+    best_for: ["sales workflows", "service operations", "ERP integration"]
+    integrates_with: ["Power Platform", "Teams", "Outlook"]
+    effort: 4
+    cost_tier: paid
+    notes: Microsoft-native CRM/ERP path.
+    enabled: true
+  - id: hubspot
+    name: HubSpot
+    category: CRM
+    pillars: ["Customer Experience & Marketing"]
+    what_it_does: CRM and marketing automation platform.
+    best_for: ["lead management", "marketing workflows", "sales operations"]
+    integrates_with: ["n8n", "Zapier", "Slack"]
+    effort: 2
+    cost_tier: paid
+    notes: Common SMB CRM integration target.
+    enabled: true
+  - id: salesforce
+    name: Salesforce
+    category: CRM
+    pillars: ["Customer Experience & Marketing"]
+    what_it_does: Enterprise CRM platform.
+    best_for: ["sales automation", "service workflows", "pipeline reporting"]
+    integrates_with: ["MuleSoft", "Tableau", "Slack"]
+    effort: 4
+    cost_tier: paid
+    notes: Use for Salesforce-heavy enterprises.
+    enabled: true
+  - id: slack
+    name: Slack
+    category: Collaboration
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Team messaging and workflow notifications.
+    best_for: ["alerts", "approval prompts", "operations notifications"]
+    integrates_with: ["n8n", "Zapier", "GitHub"]
+    effort: 1
+    cost_tier: free-tier
+    notes: Companion workflow notification option.
+    enabled: true
+  - id: notion
+    name: Notion
+    category: Knowledge base
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Docs, wiki, and lightweight database workspace.
+    best_for: ["playbooks", "project notes", "knowledge bases"]
+    integrates_with: ["Slack", "Zapier", "n8n"]
+    effort: 2
+    cost_tier: free-tier
+    notes: Good for documentation outputs.
+    enabled: true
+  - id: asana
+    name: Asana
+    category: Project management
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Project and task management.
+    best_for: ["implementation plans", "task routing"]
+    integrates_with: ["Slack", "Zapier", "n8n"]
+    effort: 2
+    cost_tier: paid
+    notes: Useful for delivery playbooks.
+    enabled: true
+  - id: monday
+    name: Monday.com
+    category: Work management
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Configurable work management boards and automations.
+    best_for: ["operations boards", "project tracking"]
+    integrates_with: ["Slack", "Make", "Zapier"]
+    effort: 2
+    cost_tier: paid
+    notes: Alternative work management platform.
+    enabled: true
+  - id: jira
+    name: Jira
+    category: Issue tracking
+    pillars: ["Operations & Efficiency"]
+    what_it_does: Software delivery and ticket tracking.
+    best_for: ["technical implementation tasks", "bug workflows"]
+    integrates_with: ["GitHub", "Slack", "Confluence"]
+    effort: 2
+    cost_tier: paid
+    notes: Useful for technical delivery teams.
+    enabled: true
+  - id: github
+    name: GitHub
+    category: Developer platform
+    pillars: ["Operations & Efficiency", "Cybersecurity & Risk Management"]
+    what_it_does: Source control, automation, and CI/CD.
+    best_for: ["repo workflows", "CI checks", "deployment pipelines"]
+    integrates_with: ["Actions", "Slack", "Vercel"]
+    effort: 2
+    cost_tier: free-tier
+    notes: Scout uses GitHub Actions.
+    enabled: true
+  - id: intercom
+    name: Intercom
+    category: Customer support
+    pillars: ["Customer Experience & Marketing"]
+    what_it_does: Customer messaging and support automation.
+    best_for: ["support triage", "customer engagement"]
+    integrates_with: ["Slack", "HubSpot", "Zendesk"]
+    effort: 3
+    cost_tier: paid
+    notes: Good fit for customer-facing automation.
+    enabled: true
+  - id: zendesk
+    name: Zendesk
+    category: Customer support
+    pillars: ["Customer Experience & Marketing"]
+    what_it_does: Support ticketing and customer service workflows.
+    best_for: ["ticket triage", "knowledge base", "support analytics"]
+    integrates_with: ["Slack", "Salesforce", "n8n"]
+    effort: 3
+    cost_tier: paid
+    notes: Common support automation target.
+    enabled: true
