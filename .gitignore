@@ -43,7 +43,6 @@ Thumbs.db
 # Local assistant/spec context
 .agents/
 .claude/
-.codex/
 claude/
 CLAUDE.md
 SPEC.md

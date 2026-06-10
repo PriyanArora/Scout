@@ -104,13 +104,14 @@ export async function scrapeSite(
   return pages;
 }
 
-const HIGH_SIGNAL_PATH_RE = /\/(about|services|solutions|products|pricing|capabilities|team|company)[^\s"')>]*/gi;
-
 function discoverHighSignalLinks(markdown: string, base: URL, max: number): string[] {
+  // Constructed per call: a shared `g`-flag regex keeps lastIndex across calls
+  // when the loop exits early, silently skipping links on the next invocation.
+  const highSignalPathRe = /\/(about|services|solutions|products|pricing|capabilities|team|company)[^\s"')>]*/gi;
   const found = new Set<string>();
   let m: RegExpExecArray | null;
 
-  while ((m = HIGH_SIGNAL_PATH_RE.exec(markdown)) !== null && found.size < max) {
+  while ((m = highSignalPathRe.exec(markdown)) !== null && found.size < max) {
     try {
       const url = new URL(m[0], base).href;
       found.add(url);

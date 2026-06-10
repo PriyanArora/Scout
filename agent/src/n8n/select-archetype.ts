@@ -1,26 +1,29 @@
 import type { Opportunity } from "../schemas/index.js";
 import type { ArchetypeId } from "./types.js";
 
-// Tool IDs that suggest specific archetypes
+// Tool IDs that suggest specific archetypes.
+// IDs must exist in agent/catalog.yaml — toolIds are catalog-filtered upstream,
+// so an off-catalog signal here can never match.
 const RAG_TOOL_SIGNALS = new Set([
-  "ms-azure-openai",
-  "ms-copilot-studio",
-  "ms-sharepoint",
+  "azure-ai",
+  "copilot-studio",
+  "sharepoint",
   "snowflake",
+  "pgvector",
+  "pinecone",
 ]);
 
 const CRM_TOOL_SIGNALS = new Set([
-  "ms-dynamics-crm",
-  "ms-power-apps",
+  "dynamics-365",
+  "power-apps",
   "salesforce",
   "hubspot",
 ]);
 
 const EMAIL_TOOL_SIGNALS = new Set([
-  "ms-exchange",
-  "ms-outlook",
-  "ms-teams",
-  "sendgrid",
+  "microsoft-teams",
+  "intercom",
+  "zendesk",
 ]);
 
 function scoreArchetype(

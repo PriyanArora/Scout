@@ -39,15 +39,12 @@ export function mergeWorkflow(
   template: N8nWorkflow,
   placeholders: PlaceholderMap,
 ): N8nWorkflow {
-  // Assign fresh UUIDs to each node and build a remap table old→new
-  const idMap: Record<string, string> = {};
+  // Assign fresh UUIDs to each node; connections are keyed by node *name* in
+  // n8n, so no id remapping is needed for them.
   const nodes: N8nNode[] = template.nodes.map((node) => {
-    const newId = generateUuid();
-    const oldId = node.id;
-    idMap[oldId] = newId;
     const merged: N8nNode = {
       ...node,
-      id: newId,
+      id: generateUuid(),
       parameters: fillValue(node.parameters, placeholders) as Record<string, unknown>,
     };
     if (node.credentials) {
@@ -59,11 +56,7 @@ export function mergeWorkflow(
     return merged;
   });
 
-  // Build node name → new id map for connection rewrite
-  const nameToNew: Record<string, string> = {};
-  for (const node of nodes) nameToNew[node.name] = node.id;
-
-  // Rewrite connections (keys are node names, not ids, in n8n)
+  // Deep-copy connections so the template object is never mutated by callers
   const connections: N8nWorkflow["connections"] = {};
   for (const [fromName, targets] of Object.entries(template.connections)) {
     connections[fromName] = {

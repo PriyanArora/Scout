@@ -1,3 +1,5 @@
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import type { Opportunity } from "../schemas/index.js";
 import type { LlmDeps } from "../nodes/types.js";
@@ -39,16 +41,13 @@ export function setTemplateLoader(fn: (id: ArchetypeId) => string): void {
 
 function readTemplateSync(id: string): string {
   if (templateLoader) return templateLoader(id as ArchetypeId);
-  // Node.js path (agent tests / local dev)
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // Node.js path (agent tests / local dev). This package is ESM, so
+  // require/__dirname don't exist — recreate them from import.meta.url.
+  const require = createRequire(import.meta.url);
   const fs = require("node:fs") as typeof import("node:fs");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const path = require("node:path") as typeof import("node:path");
-  const tplPath = path.resolve(
-    __dirname,
-    "../../../n8n_templates",
-    `${id}.json`,
-  );
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const tplPath = path.resolve(here, "../../n8n_templates", `${id}.json`);
   return fs.readFileSync(tplPath, "utf8");
 }
 

@@ -226,15 +226,22 @@ function toCostDelta(msg: AnthropicMessage): Omit<UsageAccumulator, "costUsd"> &
 }
 
 const PRICING: Record<string, { in: number; out: number; cacheR: number; cacheW: number }> = {
-  "claude-opus-4-8": { in: 15, out: 75, cacheR: 1.5, cacheW: 18.75 },
-  "claude-haiku-4-5": { in: 0.8, out: 4, cacheR: 0.08, cacheW: 1.0 },
+  "claude-opus-4-8": { in: 5, out: 25, cacheR: 0.5, cacheW: 6.25 },
+  "claude-haiku-4-5": { in: 1, out: 5, cacheR: 0.1, cacheW: 1.25 },
 };
+
+// The API may echo a dated model ID for an alias — match by prefix.
+function lookupPricing(model: string) {
+  if (PRICING[model]) return PRICING[model];
+  const key = Object.keys(PRICING).find((k) => model.startsWith(k));
+  return key ? PRICING[key] : undefined;
+}
 
 function addUsage(
   acc: UsageAccumulator,
   delta: ReturnType<typeof toCostDelta>,
 ): UsageAccumulator {
-  const p = PRICING[delta.model] ?? PRICING["claude-haiku-4-5"]!;
+  const p = lookupPricing(delta.model) ?? PRICING["claude-haiku-4-5"]!;
   const M = 1_000_000;
   const cost =
     (delta.inputTokens * p.in) / M +
@@ -273,7 +280,8 @@ function isSafeUrl(raw: string): boolean {
     if (u.protocol !== "https:") return false;
     const host = u.hostname;
     // Block obvious private ranges and localhost by hostname pattern
-    if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::1|0\.0\.0\.0)/.test(host)) return false;
+    // Note: WHATWG URL keeps brackets on IPv6 hostnames, e.g. "[::1]"
+    if (/^(localhost|127\.|10\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?|0\.0\.0\.0)/.test(host)) return false;
     return true;
   } catch {
     return false;
@@ -284,7 +292,8 @@ function isSafeUrl(raw: string): boolean {
 // Node implementations
 // ---------------------------------------------------------------------------
 
-const CATALOG_IDS = ["ms-365","ms-azure-openai","ms-copilot-studio","ms-copilot","ms-teams","ms-sharepoint","ms-onedrive","ms-exchange","ms-outlook","ms-power-apps","ms-power-automate","power-automate","ms-power-bi","ms-power-pages","ms-dynamics-crm","ms-dynamics-365","ms-azure-ai-search","ms-purview","ms-sentinel","ms-defender","ms-entra","ms-intune","microsoft-365-copilot","snowflake","n8n","zapier","make","slack","sendgrid","hubspot","salesforce","zendesk","twilio","stripe","aws-bedrock","google-vertex-ai","openai","anthropic","firecrawl","jina-reader","notion","airtable","monday"];
+// Keep in sync with agent/catalog.yaml (canonical) and agent/src/utils/catalog.ts.
+const CATALOG_IDS = ["microsoft-365-copilot","copilot-studio","power-automate","power-apps","power-bi","microsoft-teams","sharepoint","dataverse","microsoft-fabric","azure-functions","azure-ai","aws-lambda","supabase","vercel","netlify","n8n","make","zapier","snowflake","postgres","airtable","metabase","hex","claude-api","openai-api","langgraph","mcp","pgvector","pinecone","jina-reader","firecrawl","tavily","dynamics-365","hubspot","salesforce","slack","notion","asana","monday","jira","github","intercom","zendesk"];
 
 async function runScrapeSite(
   state: ScoutGraphState,
@@ -300,6 +309,7 @@ async function runScrapeSite(
   const cacheQ = new URLSearchParams({
     org_id: `eq.${state.orgId}`,
     normalized_url: `eq.${state.submittedUrl}`,
+    expires_at: `gt.${new Date().toISOString()}`,
     limit: "5",
     order: "created_at.desc",
     select: "id,markdown",
@@ -943,13 +953,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   const nextNode = newState.nextNode;
-  const usageDelta = {
+  // runs.usage is a jsonb merge (wants cumulative totals); runs.cost_usd is
+  // additive in complete_run_node (wants the per-step delta only).
+  const usageTotals = {
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
     cacheReadTokens: usage.cacheReadTokens,
     cacheCreationTokens: usage.cacheCreationTokens,
     costUsd: usage.costUsd,
   };
+  const stepCostUsd = Math.max(0, usage.costUsd - baseState.usage.costUsd);
 
   // --- advance run ---
   if (nextNode === null) {
@@ -962,8 +975,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     p_run_id: runId,
     p_node_execution_id: nodeExecId,
     p_next_node: nextNode,
-    p_usage: JSON.stringify(usageDelta),
-    p_cost_usd: usageDelta.costUsd,
+    p_usage: JSON.stringify(usageTotals),
+    p_cost_usd: stepCostUsd,
   }).catch(() => {});
 
   const wallMs = Math.round(performance.now() - t0);

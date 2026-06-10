@@ -9,7 +9,7 @@ describe("calculateCostUsd", () => {
       cacheReadTokens: 1_000_000,
       cacheCreationTokens: 1_000_000,
     });
-    expect(cost).toBeCloseTo(15.0 + 75.0 + 1.5 + 18.75, 2);
+    expect(cost).toBeCloseTo(5.0 + 25.0 + 0.5 + 6.25, 2);
   });
 
   it("calculates haiku cost correctly for 1M tokens each", () => {
@@ -19,7 +19,12 @@ describe("calculateCostUsd", () => {
       cacheReadTokens: 1_000_000,
       cacheCreationTokens: 1_000_000,
     });
-    expect(cost).toBeCloseTo(0.8 + 4.0 + 0.08 + 1.0, 2);
+    expect(cost).toBeCloseTo(1.0 + 5.0 + 0.1 + 1.25, 2);
+  });
+
+  it("matches dated model IDs by prefix", () => {
+    const usage = { inputTokens: 1_000_000, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 };
+    expect(calculateCostUsd("claude-haiku-4-5-20251001", usage)).toBeCloseTo(1.0, 2);
   });
 
   it("returns 0 for unknown model", () => {

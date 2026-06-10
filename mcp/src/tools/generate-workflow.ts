@@ -42,6 +42,13 @@ export async function handleGenerateWorkflow(args: GenerateWorkflowArgs) {
     }),
   });
 
+  if (!res.ok) {
+    return {
+      content: [{ type: "text" as const, text: `Anthropic API error ${res.status}: ${await res.text()}` }],
+      isError: true,
+    };
+  }
+
   const msg = await res.json() as { content: Array<{ type: string; text?: string }> };
   const text = msg.content.find((b) => b.type === "text")?.text ?? "{}";
 
