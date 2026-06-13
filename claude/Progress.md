@@ -609,18 +609,18 @@ Each gate maps to one phase: G1 = P1, G2 = P2, and so on. Advance a gate when ph
 - [x] Single catalog source `agent/src/catalog/data.ts`; Anthropic schemas derive via `zodOutputFormat` (Wave 1c), MCP via `registerTool` Zod shapes, Edge/SQL/YAML enforced by `catalog-drift.test.ts` (5-representation guard). F-7 pillar drift reconciled to `Cybersecurity & Risk`.
 - [x] Migrated `mcp/src/index.ts` → `McpServer` + `registerTool` (Zod input schemas in `server.ts`) + InMemoryTransport round-trip test. Fixed MCP's wrong inline catalog (grounding) + added filtering.
 
-### Wave 3 — Discovery depth, off-model
-- [ ] `defuddle` extraction fallback (verify Deno compat; else Node/Vercel layer).
-- [ ] Deterministic multi-page breadth (sitemap/robots + `maxPages`>1); bring Edge path to parity.
-- [ ] Conditional requests (`ETag`/`If-Modified-Since`) + sitemap `lastmod` incremental crawl (new `scrape_pages` cols).
-- [ ] *(prototype, flag-gated)* metascraper firmographic pass + keyless GLEIF/EDGAR/Wikidata enrich (cited).
+### Wave 3 — Discovery depth, off-model `[implemented]`
+- [x] `defuddle@0.18.1` main-content extraction in agent/src direct-fetch (`extractMainContent` seam, `defuddle/node`); Node/Vercel layer only (Edge keeps inline stripper — Deno compat unverified).
+- [x] Deterministic multi-page breadth on the Edge (`discoverHighSignalLinks` + `MAX_SCRAPE_PAGES=4`), parity with agent/src; persists each page.
+- [x] Conditional requests: migration adds `scrape_pages.etag/last_modified`; agent/src `safeDirectFetch` sends If-None-Match/If-Modified-Since + 304→notModified; validators stored both paths. (sitemap-`lastmod` incremental crawl is the documented forward extension.)
+- [x] *(prototype, default-off)* keyless CC0 Wikidata firmographic enrich (`SCOUT_ENRICH_ENABLED`, cited). metascraper/GLEIF/EDGAR documented as extension points.
 
-### Wave 4 — Pattern grounding → real n8n generation (Track 2 → 3 chain)
-- [ ] Hand-curate `agent/patterns.yaml` (~12 entries; EIP + Workflow-Patterns `control_flow`; names-only from microservices.io).
-- [ ] Bring Edge `generate_workflow` to parity (merge + `validateWorkflow` inline).
-- [ ] Offline n8n template index (official API + Zie619), filtered to catalog-mappable subset, bundle only shipped templates.
-- [ ] `n8n-mcp` as build-time / CI validator over generated workflow JSON — **closes the open P8 import smoke test**.
-- [ ] *(prototype)* gte-small + pgvector for "closest real workflow" template retrieval.
+### Wave 4 — Pattern grounding → real n8n generation (Track 2 → 3 chain) `[implemented]`
+- [x] `agent/patterns.yaml` (12 entries; EIP + Workflow-Patterns `control_flow`; names-only microservices.io) + TS mirror + `selectPattern`; grounding/drift tests; wired into `selectArchetype`.
+- [x] Edge `generate_workflow` parity — generated `supabase/functions/agent/n8n.ts` (templates + ported merge+validate); drift-guarded byte-for-byte against canonical templates.
+- [x] Offline n8n template index (`build-n8n-index.mjs` → `index.json`; shipped templates + provenance; full corpus = documented offline step) + `template-index.ts` adapter.
+- [x] `n8n-mcp` (MIT, pinned SHA b0f5e25) as CI/build-time validator — ADR 007 + `evals.yml`; hermetic `importability.test.ts` **closes the open P8 import smoke test**.
+- [ ] *(prototype, deferred)* gte-small + pgvector semantic template retrieval — needs the Edge embedding runtime (unverifiable here); `lookupTemplate` provides the non-vector retrieval; documented seam.
 
 ### Wave 5 — Deliverable + security + observability
 - [ ] `react-markdown` for the playbook render (currently raw `<pre>`) + structured requirements/design.

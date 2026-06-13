@@ -132,4 +132,15 @@ _(appended as encountered)_
   `catalog-drift.test.ts`. F-7 reconciled to `Cybersecurity & Risk`. **Found + fixed a grounding-red-line bug:**
   MCP `map-tools` shipped a totally different/wrong catalog (ms-365/twilio/stripe/openai) — replaced with the
   canonical 43 + added filtering. MCP rewritten to `McpServer`/`registerTool` (Zod) + InMemoryTransport round-trip.
-- [ ] Wave 3 · [ ] Wave 4 · [ ] Wave 5 · [ ] Wave 6 · [ ] Final drift check
+- [x] **Wave 3** — discovery depth. defuddle (Node layer, `extractMainContent` seam, fallback-safe).
+  Edge multi-page breadth parity (was single-page) page-capped at 4. Conditional-request columns +
+  agent/src 304 handling + validator capture. Enrich prototype (Wikidata, default-off, cited).
+  **Scope notes:** defuddle stays out of the Edge (no Deno verify); sitemap-`lastmod` crawl and
+  metascraper/GLEIF/EDGAR are documented extension points (plan marks them prototype/defer).
+- [x] **Wave 4** — patterns.yaml (+TS mirror, grounding/drift tests, wired into selectArchetype). Edge
+  generate_workflow parity via generated `n8n.ts` (verified-by-proxy: ported tested logic + byte-identical
+  drift-guarded templates — the honest way to land Deno code we can't run). Offline template index
+  (shipped-templates + provenance; full corpus = documented offline step). n8n-mcp pinned-SHA CI validator
+  (ADR 007) + hermetic importability test CLOSES P8. **#18 gte-small semantic retrieval: deferred prototype**
+  (needs Edge embedding runtime; `lookupTemplate` is the implemented non-vector retrieval). Per plan #18 = PROTOTYPE.
+- [ ] Wave 5 · [ ] Wave 6 · [ ] Final drift check
