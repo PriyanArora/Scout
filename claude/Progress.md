@@ -605,9 +605,9 @@ Each gate maps to one phase: G1 = P1, G2 = P2, and so on. Advance a gate when ph
 - [x] Anthropic Structured Outputs (SDK: `zodOutputFormat` on profile/identify/map/discovery; Edge: hand-rolled `output_config` on profile + map with auto-retry-without-it on 4xx). n8n-fill excluded (open record).
 - [x] `jsonrepair` safety net between `extractJson`/`JSON.parse` (SDK `parser.ts` + Edge `extractJson`, `npm:jsonrepair@3.14.0`).
 
-### Wave 2 — One schema source + MCP modernization
-- [ ] `z.toJSONSchema()` single source in `agent/src/schemas/index.ts` (derive Anthropic + MCP schemas + `CATALOG_IDS`).
-- [ ] Migrate `mcp/src/index.ts` to `McpServer` + `registerTool` (+ InMemoryTransport test, Inspector dev loop).
+### Wave 2 — One schema source + MCP modernization `[implemented]`
+- [x] Single catalog source `agent/src/catalog/data.ts`; Anthropic schemas derive via `zodOutputFormat` (Wave 1c), MCP via `registerTool` Zod shapes, Edge/SQL/YAML enforced by `catalog-drift.test.ts` (5-representation guard). F-7 pillar drift reconciled to `Cybersecurity & Risk`.
+- [x] Migrated `mcp/src/index.ts` → `McpServer` + `registerTool` (Zod input schemas in `server.ts`) + InMemoryTransport round-trip test. Fixed MCP's wrong inline catalog (grounding) + added filtering.
 
 ### Wave 3 — Discovery depth, off-model
 - [ ] `defuddle` extraction fallback (verify Deno compat; else Node/Vercel layer).

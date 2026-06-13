@@ -96,9 +96,20 @@ Legend: 🔴 large/one-way · 🟠 moderate · 🟢 low-risk/additive.
 
 _(appended as encountered)_
 
-- **F-7 pillar-name drift (pre-existing).** Zod enum says `Cybersecurity & Risk`; catalog YAML/SQL +
-  Edge prompt say `Cybersecurity & Risk Management`. The plan flags this must be reconciled to one
-  spelling in Wave 2 / before `patterns.yaml`. Resolution recorded when Wave 2 lands.
+- **F-7 pillar-name drift (pre-existing) — RESOLVED (Wave 2).** Zod enum + both identify prompts use the
+  short form `Cybersecurity & Risk`; only the catalog YAML `pillars` metadata + SQL seed used the long
+  `Cybersecurity & Risk Management`. **Conflict:** `DECISION_LOG.md` calls the *long* form "canonical", but
+  the code validates against the *short* form everywhere it matters. **Resolution:** standardised on the short
+  form (what's enforced); fixed the 2 YAML entries + SQL seed. The system prefix already used the short form.
+- **MCP catalog grounding bug (discovered Wave 2).** `mcp/src/tools/map-tools.ts` carried a separate, wrong
+  catalog (`ms-365`, `twilio`, `stripe`, `openai`, …) and did **no** filtering — it could surface
+  hallucinated/off-stack tools, violating the grounding red line. Not in the plan as a known issue; fixed by
+  canonicalising the list + adding catalog filtering, now guarded by the drift test.
+- **Structured outputs on the Edge (Wave 1c).** The plan said "both paths." The Edge is Deno raw-fetch and
+  cannot be run/typechecked locally (no Deno), and a malformed `output_config` would fail the *request*
+  (unlike response-side jsonrepair). **Resolution:** kept the integration but made `anthropicCall`
+  auto-retry once **without** `output_config` on any 4xx, and scoped it to the 2 simplest schemas. Worst
+  case degrades to today's behavior — never breaks the demo. Documented, not forced.
 
 ## 4. Running status
 
@@ -116,4 +127,9 @@ _(appended as encountered)_
   to the 2 simplest schemas (profile/map) behind the auto-fallback guard rather than all 6 raw-fetch nodes —
   the unverifiable raw-fetch schema risk to the demo is contained by the guard; other Edge nodes rely on the
   adopted jsonrepair net. count_tokens applied to profile+identify (carry the blob), not critique (8K summary).
-- [ ] Wave 2 · [ ] Wave 3 · [ ] Wave 4 · [ ] Wave 5 · [ ] Wave 6 · [ ] Final drift check
+- [x] **Wave 2** — single catalog source + MCP. Canonical = `agent/src/catalog/data.ts`. The "single source"
+  across 5 runtimes that can't share an import (TS, YAML, SQL, Deno-Edge, separate MCP pkg) is enforced by
+  `catalog-drift.test.ts`. F-7 reconciled to `Cybersecurity & Risk`. **Found + fixed a grounding-red-line bug:**
+  MCP `map-tools` shipped a totally different/wrong catalog (ms-365/twilio/stripe/openai) — replaced with the
+  canonical 43 + added filtering. MCP rewritten to `McpServer`/`registerTool` (Zod) + InMemoryTransport round-trip.
+- [ ] Wave 3 · [ ] Wave 4 · [ ] Wave 5 · [ ] Wave 6 · [ ] Final drift check
