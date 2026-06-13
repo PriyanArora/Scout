@@ -4,10 +4,10 @@ import { parseStructuredOutput, StructuredOutputError } from "../utils/parser.js
 import { filterValidToolIds } from "../utils/catalog.js";
 import { accumulateCost } from "../utils/cost.js";
 import {
-  buildCatalogPrefix,
   MAP_TOOLS_SYSTEM_SUFFIX,
   buildMapToolsPrompt,
 } from "../prompts/map-tools.js";
+import { buildSystemPrefix } from "../prompts/system-prefix.js";
 import type { ScoutGraphState } from "../checkpoint/types.js";
 import type { NodeDeps } from "./types.js";
 import { extractUsage, firstTextContent } from "./types.js";
@@ -27,7 +27,6 @@ export async function mapToolsNode(
     return { nextNode: "discovery_questions", step: state.step + 1 };
   }
 
-  const catalogPrefix = buildCatalogPrefix();
   const userPrompt = buildMapToolsPrompt(opps);
 
   let lastError: string | null = null;
@@ -43,11 +42,8 @@ export async function mapToolsNode(
       model: MODEL,
       max_tokens: 2048,
       system: [
-        {
-          type: "text",
-          text: catalogPrefix + MAP_TOOLS_SYSTEM_SUFFIX,
-          cache_control: { type: "ephemeral" },
-        },
+        { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
+        { type: "text", text: MAP_TOOLS_SYSTEM_SUFFIX },
       ],
       messages: [{ role: "user", content: correctionPrefix + userPrompt }],
     });

@@ -6,6 +6,7 @@ import {
   DISCOVERY_QS_SYSTEM,
   buildDiscoveryQsPrompt,
 } from "../prompts/discovery-qs.js";
+import { buildSystemPrefix } from "../prompts/system-prefix.js";
 import type { ScoutGraphState } from "../checkpoint/types.js";
 import type { NodeDeps } from "./types.js";
 import { extractUsage, firstTextContent } from "./types.js";
@@ -31,7 +32,10 @@ export async function discoveryQuestionsNode(
   const message = await deps.createMessage({
     model: MODEL,
     max_tokens: 1024,
-    system: DISCOVERY_QS_SYSTEM,
+    system: [
+      { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
+      { type: "text", text: DISCOVERY_QS_SYSTEM },
+    ],
     messages: [{ role: "user", content: userPrompt }],
   });
 

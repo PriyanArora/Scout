@@ -8,6 +8,7 @@ import { accumulateCost } from "../utils/cost.js";
 import type { UsageAccumulator } from "../checkpoint/types.js";
 import { parseStructuredOutput, StructuredOutputError } from "../utils/parser.js";
 import { N8N_FILL_SYSTEM, buildN8nFillPrompt } from "../prompts/n8n-fill.js";
+import { buildSystemPrefix } from "../prompts/system-prefix.js";
 import { selectArchetype } from "./select-archetype.js";
 import { mergeWorkflow } from "./merger.js";
 import { validateWorkflow } from "./validator.js";
@@ -81,7 +82,10 @@ export async function generateWorkflow(
     const message = await deps.createMessage({
       model: MODEL,
       max_tokens: 1024,
-      system: [{ type: "text", text: N8N_FILL_SYSTEM }],
+      system: [
+        { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
+        { type: "text", text: N8N_FILL_SYSTEM },
+      ],
       messages: [
         {
           role: "user",

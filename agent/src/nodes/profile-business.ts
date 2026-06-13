@@ -6,7 +6,7 @@ import {
   PROFILE_BUSINESS_SYSTEM,
   buildProfileBusinessPrompt,
 } from "../prompts/profile-business.js";
-import { buildCatalogPrefix } from "../prompts/map-tools.js";
+import { buildSystemPrefix } from "../prompts/system-prefix.js";
 import type { ScoutGraphState } from "../checkpoint/types.js";
 import type { NodeDeps } from "./types.js";
 import { extractUsage, firstTextContent } from "./types.js";
@@ -18,7 +18,6 @@ export async function profileBusinessNode(
   markdown: string,
   deps: NodeDeps,
 ): Promise<Partial<ScoutGraphState>> {
-  const catalogPrefix = buildCatalogPrefix();
   const userPrompt = buildProfileBusinessPrompt(markdown);
 
   let lastError: string | null = null;
@@ -34,7 +33,8 @@ export async function profileBusinessNode(
       model: MODEL,
       max_tokens: 2048,
       system: [
-        { type: "text", text: catalogPrefix + "\n\n" + PROFILE_BUSINESS_SYSTEM, cache_control: { type: "ephemeral" } },
+        { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
+        { type: "text", text: PROFILE_BUSINESS_SYSTEM },
       ],
       messages: [{ role: "user", content: correctionPrefix + userPrompt }],
     });

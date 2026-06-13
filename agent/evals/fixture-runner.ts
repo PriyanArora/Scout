@@ -20,9 +20,13 @@ interface Fixture {
 function makeMockDeps(): NodeDeps {
   return {
     createMessage: async (params) => {
-      // Return minimal valid JSON for each model call based on system prompt content
+      // Dispatch on the NODE-SPECIFIC system block. With prompt caching the
+      // shared prefix (block 0) is identical across nodes and mentions every
+      // report section ("business profile", "opportunities", …), so matching the
+      // concatenation would misroute. The node-specific instruction is the last
+      // text block (after the cache_control breakpoint).
       const systemText = Array.isArray(params.system)
-        ? params.system.map((s) => (s.type === "text" ? s.text : "")).join(" ")
+        ? (params.system.filter((s) => s.type === "text").at(-1)?.text ?? "")
         : String(params.system ?? "");
 
       let content = "{}";
