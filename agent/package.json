@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.102.0",
+    "jsonrepair": "3.14.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

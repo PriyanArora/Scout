@@ -4,6 +4,10 @@
 // Auth: POST body {run_id} + header x-scout-internal = AGENT_INTERNAL_SECRET
 // Supabase auto-injects: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
+// jsonrepair (ISC) — repairs truncated/malformed JSON before parse. Resolved by
+// Deno at runtime from npm (pinned exact); mirrors agent/src/utils/parser.ts.
+import { jsonrepair } from "npm:jsonrepair@3.14.0";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -272,7 +276,13 @@ function extractJson(text: string): unknown {
   const raw = fenced?.[1]?.trim() ?? text;
   const start = raw.search(/[{[]/);
   if (start === -1) throw new Error("No JSON found in response");
-  return JSON.parse(raw.slice(start));
+  const slice = raw.slice(start);
+  try {
+    return JSON.parse(slice);
+  } catch {
+    // Repair truncated/malformed JSON (e.g. max_tokens cutoffs) before failing.
+    return JSON.parse(jsonrepair(slice));
+  }
 }
 
 // ---------------------------------------------------------------------------
