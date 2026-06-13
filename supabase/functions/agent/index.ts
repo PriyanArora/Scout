@@ -194,22 +194,39 @@ interface AnthropicMessage {
   usage: AnthropicUsage;
 }
 
+// A structured-outputs format block (json_schema subset: no min/max/format,
+// additionalProperties:false on every object). Optional per call.
+type OutputConfig = { format: { type: "json_schema"; schema: Record<string, unknown> } };
+
 async function anthropicCall(
   apiKey: string,
   model: string,
   maxTokens: number,
   system: SystemPrompt,
   messages: MessageParam[],
+  outputConfig?: OutputConfig,
 ): Promise<AnthropicMessage> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
-  });
+  const post = (body: Record<string, unknown>) =>
+    fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+  const base: Record<string, unknown> = { model, max_tokens: maxTokens, system, messages };
+  let res = await post(outputConfig ? { ...base, output_config: outputConfig } : base);
+
+  // Safety net: if the request is rejected (e.g. an output_config schema the API
+  // won't accept), retry once WITHOUT structured outputs so the run never breaks.
+  // jsonrepair + extractJson then validate the response as before.
+  if (!res.ok && outputConfig && res.status >= 400 && res.status < 500) {
+    res = await post(base);
+  }
+
   if (!res.ok) {
     const t = await res.text();
     throw new Error(`Anthropic ${res.status}: ${t}`);
@@ -513,9 +530,31 @@ async function runProfileBusiness(
 Schema:
 {"name":string,"industry":string,"size":string,"description":string,"primaryServices":string[],"technologyIndicators":string[],"marketPosition":string,"evidenceSnippets":string[]}`;
 
+  const profileFormat: OutputConfig = {
+    format: {
+      type: "json_schema",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          name: { type: "string" },
+          industry: { type: "string" },
+          size: { type: "string" },
+          description: { type: "string" },
+          primaryServices: { type: "array", items: { type: "string" } },
+          technologyIndicators: { type: "array", items: { type: "string" } },
+          marketPosition: { type: "string" },
+          evidenceSnippets: { type: "array", items: { type: "string" } },
+        },
+        required: ["name", "industry", "description", "primaryServices", "technologyIndicators", "evidenceSnippets"],
+      },
+    },
+  };
+
   const msg = await anthropicCall(
     apiKey, "claude-opus-4-8", 2048, systemWithPrefix(system),
     [{ role: "user", content: `<scraped_content>\n${markdown.slice(0, 40_000)}\n</scraped_content>\n\nExtract the JSON profile:` }],
+    profileFormat,
   );
 
   const delta = toCostDelta(msg);
@@ -597,9 +636,27 @@ async function runMapTools(
   const system = `You are a solutions architect. For each opportunity select 1–3 tool ids from the grounded catalog in your instructions (use ONLY those ids).
 Output ONLY a JSON array: [{"opportunityId":string,"toolIds":string[]}]`;
 
+  const mapFormat: OutputConfig = {
+    format: {
+      type: "json_schema",
+      schema: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            opportunityId: { type: "string" },
+            toolIds: { type: "array", items: { type: "string" } },
+          },
+          required: ["opportunityId", "toolIds"],
+        },
+      },
+    },
+  };
+
   const msg = await anthropicCall(apiKey, "claude-haiku-4-5", 1024, systemWithPrefix(system), [
     { role: "user", content: `Opportunities:\n${oppSummary}\n\nMap tool IDs:` },
-  ]);
+  ], mapFormat);
   const delta = toCostDelta(msg);
   const usage = addUsage(state.usage, delta);
 

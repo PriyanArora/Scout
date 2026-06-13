@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { type Opportunity } from "../schemas/index.js";
 import { parseStructuredOutput, StructuredOutputError } from "../utils/parser.js";
 import { filterValidToolIds } from "../utils/catalog.js";
@@ -45,6 +46,7 @@ export async function mapToolsNode(
         { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
         { type: "text", text: MAP_TOOLS_SYSTEM_SUFFIX },
       ],
+      output_config: { format: zodOutputFormat(ToolMappingSchema) },
       messages: [{ role: "user", content: correctionPrefix + userPrompt }],
     });
 

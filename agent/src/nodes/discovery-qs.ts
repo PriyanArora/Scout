@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { type BusinessProfile, type Opportunity } from "../schemas/index.js";
 import { parseStructuredOutput, StructuredOutputError } from "../utils/parser.js";
 import { accumulateCost } from "../utils/cost.js";
@@ -36,6 +37,7 @@ export async function discoveryQuestionsNode(
       { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
       { type: "text", text: DISCOVERY_QS_SYSTEM },
     ],
+    output_config: { format: zodOutputFormat(QuestionsSchema) },
     messages: [{ role: "user", content: userPrompt }],
   });
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { OpportunitySchema, type BusinessProfile, type Opportunity } from "../schemas/index.js";
 
 // Partial schema for raw LLM output — quadrant/priority are computed later.
@@ -53,6 +54,7 @@ export async function identifyOppsNode(
         { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
         { type: "text", text: IDENTIFY_OPPS_SYSTEM },
       ],
+      output_config: { format: zodOutputFormat(OpportunitiesSchema) },
       messages: [{ role: "user", content: correctionPrefix + userPrompt }],
     });
 

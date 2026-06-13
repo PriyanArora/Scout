@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { BusinessProfileSchema } from "../schemas/index.js";
 import { parseStructuredOutput, StructuredOutputError } from "../utils/parser.js";
 import { accumulateCost } from "../utils/cost.js";
@@ -36,6 +37,10 @@ export async function profileBusinessNode(
         { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
         { type: "text", text: PROFILE_BUSINESS_SYSTEM },
       ],
+      // Structured outputs: schema-valid by construction. zodOutputFormat strips
+      // unsupported keywords (min/max/format) and sets additionalProperties:false.
+      // parseStructuredOutput below stays as the client-side validator + jsonrepair net.
+      output_config: { format: zodOutputFormat(BusinessProfileSchema) },
       messages: [{ role: "user", content: correctionPrefix + userPrompt }],
     });
 
