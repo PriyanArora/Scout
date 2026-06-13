@@ -45,3 +45,24 @@ jobs:
           # agent/n8n_templates/*.json once a runner has network access.
           npx -y "github:czlonkowski/n8n-mcp#${N8N_MCP_SHA}" --help \
             || echo "n8n-mcp deep validation skipped on this runner (network/setup); hermetic check above is authoritative."
+
+  # promptfoo grounding regression gate (Wave 5 #22). Runs only when an API key is
+  # configured, so the default CI path stays $0; the deterministic vitest evals are
+  # the always-on gate.
+  promptfoo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run promptfoo eval (skipped without ANTHROPIC_API_KEY)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "ANTHROPIC_API_KEY not set — skipping promptfoo (deterministic vitest evals are the $0 gate)."
+            exit 0
+          fi
+          npx -y promptfoo@0.121.15 eval -c promptfooconfig.yaml --no-cache

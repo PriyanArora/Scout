@@ -1,0 +1,47 @@
+# promptfoo regression gate (INTEGRATION_PLAN §3 Wave 5 #22 / Decision Log Area D).
+# Declarative LLM-output assertions run in CI. The deterministic, always-on $0 gate
+# is agent/evals/deterministic-evals.test.ts; this adds model-in-the-loop checks of
+# the grounding invariants on Scout's exact models. Runs only when ANTHROPIC_API_KEY
+# is present (see .github/workflows/evals.yml) so the default path stays $0.
+#
+# Pair model-graded asserts with the Batch API (50% off) for nightly runs.
+# Run locally: npx promptfoo@latest eval -c promptfooconfig.yaml
+
+description: Scout grounding & no-hallucination regression gate
+
+prompts:
+  - |
+    You are a solutions architect. For each opportunity select 1-3 tool ids from
+    NorthBound's grounded catalog (use ONLY these ids):
+    microsoft-365-copilot, copilot-studio, power-automate, power-apps, power-bi,
+    microsoft-teams, sharepoint, dataverse, microsoft-fabric, azure-functions,
+    azure-ai, aws-lambda, supabase, vercel, netlify, n8n, make, zapier, snowflake,
+    postgres, airtable, metabase, hex, claude-api, openai-api, langgraph, mcp,
+    pgvector, pinecone, jina-reader, firecrawl, tavily, dynamics-365, hubspot,
+    salesforce, slack, notion, asana, monday, jira, github, intercom, zendesk.
+    Output ONLY a JSON array: [{{"opportunityId":string,"toolIds":string[]}}].
+
+    Opportunities:
+    {{opportunities}}
+
+providers:
+  - id: anthropic:messages:claude-haiku-4-5
+
+defaultTest:
+  assert:
+    - type: is-json
+    # Grounding red line: every returned tool id must be in the catalog.
+    - type: javascript
+      value: |
+        const CATALOG = new Set(["microsoft-365-copilot","copilot-studio","power-automate","power-apps","power-bi","microsoft-teams","sharepoint","dataverse","microsoft-fabric","azure-functions","azure-ai","aws-lambda","supabase","vercel","netlify","n8n","make","zapier","snowflake","postgres","airtable","metabase","hex","claude-api","openai-api","langgraph","mcp","pgvector","pinecone","jina-reader","firecrawl","tavily","dynamics-365","hubspot","salesforce","slack","notion","asana","monday","jira","github","intercom","zendesk"]);
+        let arr; try { arr = JSON.parse(output); } catch { return { pass: false, reason: "not JSON" }; }
+        for (const m of arr) for (const id of (m.toolIds || [])) {
+          if (!CATALOG.has(id)) return { pass: false, reason: `hallucinated tool id: ${id}` };
+        }
+        return { pass: true };
+
+tests:
+  - vars:
+      opportunities: "- close-automation: Month-End Close Automation (Operations & Efficiency)"
+  - vars:
+      opportunities: "- support-triage: Inbound Support Triage (Customer Experience & Marketing)"

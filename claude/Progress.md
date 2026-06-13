@@ -622,11 +622,11 @@ Each gate maps to one phase: G1 = P1, G2 = P2, and so on. Advance a gate when ph
 - [x] `n8n-mcp` (MIT, pinned SHA b0f5e25) as CI/build-time validator — ADR 007 + `evals.yml`; hermetic `importability.test.ts` **closes the open P8 import smoke test**.
 - [ ] *(prototype, deferred)* gte-small + pgvector semantic template retrieval — needs the Edge embedding runtime (unverifiable here); `lookupTemplate` provides the non-vector retrieval; documented seam.
 
-### Wave 5 — Deliverable + security + observability
-- [ ] `react-markdown` for the playbook render (currently raw `<pre>`) + structured requirements/design.
-- [ ] `@react-pdf/renderer` export (closes deferred P13; uses `export_path`; Vercel layer, no headless browser).
-- [ ] Security: `ipaddr.js` SSRF on web path; `.strict()` webhook schema; *(prototype)* `rate-limiter-flexible` (closes P10 rate-limit); *(prototype)* `seen_signatures` nonce table. Document Edge DNS-rebinding residual.
-- [ ] `promptfoo` into `evals.yml` + Batch API for model-graded judge; *(prototype)* `jsondiffpatch` version-diff; *(prototype)* Helicone tracing.
+### Wave 5 — Deliverable + security + observability `[implemented]`
+- [x] `react-markdown` (+`remark-gfm`) playbook render + structured requirements/design (`StructuredView`).
+- [x] `@react-pdf/renderer` PDF export at `/api/report/[runId]/pdf` (Node runtime, no headless browser) — closes deferred P13. Also fixed the pre-existing broken `next build` (extensionAlias for NodeNext `.js` imports).
+- [x] Security: `ipaddr.js` SSRF range classification on the web path; `.strict()` webhook schema; Edge DNS-rebinding residual documented in `docs/SECURITY.md`. *(prototype, deferred)* `rate-limiter-flexible` (P10) + `seen_signatures` nonce — documented seams; web uses Supabase PostgREST not a raw pg pool, and free-tier runs are naturally bounded.
+- [x] `promptfoo` regression gate (`promptfooconfig.yaml` + `evals.yml` job, key-gated so default is $0) asserting catalog grounding/no-hallucination. Batch-API judge noted in config. *(prototype, deferred)* `jsondiffpatch` version-diff, Helicone tracing — documented (env in `.env.example`).
 
 ### Wave 6 — Durable-runtime change (LAST, behind green P9 tests)
 - [ ] Checkpoint claim-check slimming (store `scrapePageIds`, rehydrate `scrapeMarkdown` from `scrape_pages`) + de-dup `reports.opportunities`/`ranked`. **One-way door; fixes the existing red-line markdown-in-checkpoint violation.**

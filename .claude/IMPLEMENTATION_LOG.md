@@ -143,4 +143,11 @@ _(appended as encountered)_
   (shipped-templates + provenance; full corpus = documented offline step). n8n-mcp pinned-SHA CI validator
   (ADR 007) + hermetic importability test CLOSES P8. **#18 gte-small semantic retrieval: deferred prototype**
   (needs Edge embedding runtime; `lookupTemplate` is the implemented non-vector retrieval). Per plan #18 = PROTOTYPE.
-- [ ] Wave 5 · [ ] Wave 6 · [ ] Final drift check
+- [x] **Wave 5** — react-markdown playbook + structured requirements/design; @react-pdf/renderer export
+  route (closes P13). **Found + fixed a pre-existing broken `next build`** (NodeNext `.js` specifiers
+  unresolved by webpack → `extensionAlias` in next.config; build now green with placeholder env). Security:
+  ipaddr.js SSRF (decimal/hex/octal/IPv4-mapped bypasses) + `.strict()` webhook + Edge DNS-rebinding residual
+  documented. promptfoo grounding gate (key-gated, $0 default). **Deferred prototypes** (plan = PROTOTYPE):
+  rate-limiter-flexible / seen_signatures (web is PostgREST, not a pg pool; free-tier naturally bounded),
+  jsondiffpatch, Helicone (env seam in .env.example).
+- [ ] Wave 6 · [ ] Final drift check
