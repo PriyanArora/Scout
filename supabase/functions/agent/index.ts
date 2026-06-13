@@ -7,6 +7,8 @@
 // jsonrepair (ISC) — repairs truncated/malformed JSON before parse. Resolved by
 // Deno at runtime from npm (pinned exact); mirrors agent/src/utils/parser.ts.
 import { jsonrepair } from "npm:jsonrepair@3.14.0";
+// n8n templates + merge + validate (generated; mirrors agent/src/n8n — Wave 4 #15).
+import { TEMPLATES, mergeWorkflow, validateWorkflow } from "./n8n.ts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -873,12 +875,31 @@ async function runGenerateWorkflow(
   const delta = toCostDelta(msg);
   const usage = addUsage(state.usage, delta);
 
-  let workflow: Record<string, unknown> = {};
+  let placeholders: Record<string, string> = {};
   try {
-    const placeholders = extractJson(extractText(msg)) as Record<string, string>;
-    workflow = { archetype, placeholders, generatedAt: new Date().toISOString() };
+    placeholders = extractJson(extractText(msg)) as Record<string, string>;
   } catch {
-    workflow = { archetype, placeholders: {}, generatedAt: new Date().toISOString() };
+    placeholders = {};
+  }
+
+  // Edge parity with agent/src: merge the placeholder map into the archetype
+  // template and validate the result, so the report carries a real, importable
+  // n8n workflow (not just a placeholder map). Best-effort — never fatal.
+  let workflow: Record<string, unknown>;
+  try {
+    const template = TEMPLATES[archetype];
+    const merged = mergeWorkflow(template, placeholders);
+    const validation = validateWorkflow(merged);
+    workflow = {
+      archetype,
+      placeholders,
+      workflow: merged,
+      valid: validation.valid,
+      validationErrors: validation.errors,
+      generatedAt: new Date().toISOString(),
+    };
+  } catch (err) {
+    workflow = { archetype, placeholders, generatedAt: new Date().toISOString(), mergeError: String(err) };
   }
 
   return { workflow, usage, nextNode: "discovery_questions", step: state.step + 1, error: null };

@@ -12,7 +12,9 @@
   "scripts": {
     "lint": "npm --workspaces --if-present run lint",
     "typecheck": "npm --workspaces --if-present run typecheck",
-    "test": "npm --workspaces --if-present run test"
+    "test": "npm --workspaces --if-present run test",
+    "build:n8n-index": "node agent/scripts/build-n8n-index.mjs",
+    "build:edge-n8n": "node agent/scripts/build-edge-n8n.mjs"
   },
   "dependencies": {
     "likit-claude": "^1.0.2"
