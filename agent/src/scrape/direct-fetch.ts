@@ -2,7 +2,8 @@
 // Used as fallback when Jina Reader returns low-signal content.
 
 import { assertSafeRedirect, normalizeUrl, type IPResolver } from "../utils/url.js";
-import { htmlToText, extractTitle, normalizeMarkdown } from "./normalize.js";
+import { extractTitle, normalizeMarkdown } from "./normalize.js";
+import { extractMainContent } from "./extract.js";
 import { sha256Hex } from "./hash.js";
 import { LOW_SIGNAL_THRESHOLD, type ScrapeResult } from "./types.js";
 
@@ -66,8 +67,7 @@ export async function safeDirectFetch(
   }
 
   const title = extractTitle(html);
-  const text = htmlToText(html);
-  const markdown = normalizeMarkdown(text);
+  const markdown = normalizeMarkdown(await extractMainContent(html, currentUrl.href));
   const contentHash = await sha256Hex(markdown);
 
   return {
