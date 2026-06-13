@@ -2,9 +2,33 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Database } from "@/lib/db-types";
 
 type ReportRow = Database["public"]["Tables"]["reports"]["Row"];
+
+// Render a requirements/design record as readable sections (was JSON.stringify).
+function StructuredView({ data }: { data: Record<string, unknown> }) {
+  return (
+    <dl>
+      {Object.entries(data).map(([key, value]) => (
+        <div key={key}>
+          <dt><strong>{key}</strong></dt>
+          <dd>
+            {Array.isArray(value) ? (
+              <ul>{value.map((v, i) => <li key={i}>{typeof v === "object" ? JSON.stringify(v) : String(v)}</li>)}</ul>
+            ) : typeof value === "object" && value !== null ? (
+              <StructuredView data={value as Record<string, unknown>} />
+            ) : (
+              String(value)
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 interface Opportunity {
   id: string;
@@ -151,9 +175,7 @@ export function ReportViewer({ report, runId }: ReportViewerProps) {
       {report.requirements && Object.keys(report.requirements).length > 0 && (
         <section>
           <h2>Requirements Brief</h2>
-          <pre style={{ whiteSpace: "pre-wrap" }}>
-            {JSON.stringify(report.requirements, null, 2)}
-          </pre>
+          <StructuredView data={report.requirements as Record<string, unknown>} />
         </section>
       )}
 
@@ -161,9 +183,7 @@ export function ReportViewer({ report, runId }: ReportViewerProps) {
       {report.solution_design && Object.keys(report.solution_design).length > 0 && (
         <section>
           <h2>Solution Design</h2>
-          <pre style={{ whiteSpace: "pre-wrap" }}>
-            {JSON.stringify(report.solution_design, null, 2)}
-          </pre>
+          <StructuredView data={report.solution_design as Record<string, unknown>} />
         </section>
       )}
 
@@ -207,8 +227,12 @@ export function ReportViewer({ report, runId }: ReportViewerProps) {
             </button>
             {saveError && <p role="alert">{saveError}</p>}
           </>
+        ) : playbook ? (
+          <div className="playbook-markdown">
+            <Markdown remarkPlugins={[remarkGfm]}>{playbook}</Markdown>
+          </div>
         ) : (
-          <pre style={{ whiteSpace: "pre-wrap" }}>{playbook || "No playbook generated."}</pre>
+          <p>No playbook generated.</p>
         )}
       </section>
 
@@ -235,6 +259,9 @@ export function ReportViewer({ report, runId }: ReportViewerProps) {
       <footer>
         <button onClick={() => router.push("/dashboard")}>Back to dashboard</button>
         <button onClick={() => router.push(`/report/${runId}/share`)}>Share report</button>
+        <a href={`/api/report/${runId}/pdf`} download>
+          <button>Download PDF</button>
+        </a>
       </footer>
     </article>
   );
