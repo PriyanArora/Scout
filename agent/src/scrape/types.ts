@@ -7,6 +7,12 @@ export interface ScrapeResult {
   source: ScrapeSource;
   lowSignal: boolean;
   scrapeMs: number;
+  // Conditional-request validators (Wave 3 #12): captured from response headers
+  // and replayed as If-None-Match / If-Modified-Since on a later re-scrape.
+  etag?: string;
+  lastModified?: string;
+  // true when a conditional GET returned 304 Not Modified — caller reuses cache.
+  notModified?: boolean;
 }
 
 export interface PersistedScrapeResult extends ScrapeResult {

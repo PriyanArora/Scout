@@ -453,6 +453,99 @@ function systemWithPrefix(nodeInstructions: string): SystemBlock[] {
   ];
 }
 
+// Deterministic multi-page breadth (INTEGRATION_PLAN §3 Wave 3 #11): bring the
+// Edge path to parity with agent/src (which already scrapes high-signal sub-pages).
+// Page-capped to stay inside the 110s wall budget.
+const MAX_SCRAPE_PAGES = 4;
+
+function discoverHighSignalLinks(markdown: string, base: URL, max: number): string[] {
+  // Fresh regex per call so lastIndex never leaks across invocations.
+  const re = /\/(about|services|solutions|products|pricing|capabilities|team|company)[^\s"')>]*/gi;
+  const found = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(markdown)) !== null && found.size < max) {
+    try {
+      const u = new URL(m[0], base);
+      if (u.href !== base.href && isSafeUrl(u.href)) found.add(u.href);
+    } catch {
+      // skip malformed
+    }
+  }
+  return [...found];
+}
+
+interface FetchedPage {
+  markdown: string;
+  source: string;
+  etag: string | null;
+  lastModified: string | null;
+}
+
+async function fetchPageMarkdown(pageUrl: string): Promise<FetchedPage> {
+  let markdown = "";
+  let source = "jina";
+  let etag: string | null = null;
+  let lastModified: string | null = null;
+  try {
+    const jinaRes = await fetch(`https://r.jina.ai/${pageUrl}`, {
+      headers: { Accept: "text/markdown" },
+      redirect: "follow",
+    });
+    if (jinaRes.ok) markdown = await jinaRes.text();
+  } catch {
+    source = "error";
+  }
+  if (!markdown || markdown.length < 200) {
+    source = "direct";
+    try {
+      const directRes = await fetch(pageUrl, { redirect: "follow" });
+      if (directRes.ok) {
+        etag = directRes.headers.get("etag");
+        lastModified = directRes.headers.get("last-modified");
+        const html = await directRes.text();
+        markdown = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+      }
+    } catch {
+      // proceed with empty — caller treats as low-signal
+    }
+  }
+  return { markdown: markdown.slice(0, 60_000), source, etag, lastModified };
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function persistScrapePage(
+  supabaseUrl: string,
+  key: string,
+  orgId: string,
+  normalizedUrl: string,
+  page: FetchedPage & { sourceUrl: string },
+): Promise<string> {
+  try {
+    const inserted = await pgRest<Array<{ id: string }>>(supabaseUrl, key, "scrape_pages", {
+      method: "POST",
+      headers: { Prefer: "return=representation,resolution=merge-duplicates" },
+      body: JSON.stringify({
+        org_id: orgId,
+        normalized_url: normalizedUrl,
+        source_url: page.sourceUrl,
+        content_hash: await sha256Hex(page.markdown),
+        title: page.sourceUrl,
+        markdown: page.markdown,
+        scrape_meta: { source: page.source },
+        etag: page.etag,
+        last_modified: page.lastModified,
+      }),
+    });
+    return inserted[0]?.id ?? "";
+  } catch {
+    return ""; // non-fatal — markdown is already in memory
+  }
+}
+
 async function runScrapeSite(
   state: ScoutGraphState,
   supabaseUrl: string,
@@ -463,12 +556,12 @@ async function runScrapeSite(
     return { error: `scrape_site: unsafe URL ${url}`, nextNode: "profile_business", step: state.step + 1 };
   }
 
-  // Check scrape cache first
+  // Fresh cache (all pages for this run's normalized_url).
   const cacheQ = new URLSearchParams({
     org_id: `eq.${state.orgId}`,
     normalized_url: `eq.${state.submittedUrl}`,
     expires_at: `gt.${new Date().toISOString()}`,
-    limit: "5",
+    limit: "10",
     order: "created_at.desc",
     select: "id,markdown",
   });
@@ -486,36 +579,9 @@ async function runScrapeSite(
     };
   }
 
-  // Jina Reader (keyless)
-  let markdown = "";
-  let source = "jina";
-  try {
-    const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
-      headers: { Accept: "text/markdown" },
-      redirect: "follow",
-    });
-    if (jinaRes.ok) {
-      markdown = await jinaRes.text();
-    }
-  } catch {
-    source = "error";
-  }
-
-  // Direct fetch fallback
-  if (!markdown || markdown.length < 200) {
-    source = "direct";
-    try {
-      const directRes = await fetch(url, { redirect: "follow" });
-      if (directRes.ok) {
-        const html = await directRes.text();
-        markdown = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 60_000);
-      }
-    } catch {
-      // proceed with empty — node will report low signal
-    }
-  }
-
-  if (!markdown || markdown.length < 100) {
+  // Primary page.
+  const primary = await fetchPageMarkdown(url);
+  if (!primary.markdown || primary.markdown.length < 100) {
     return {
       scrapeMarkdown: "",
       scrapePageIds: [],
@@ -525,40 +591,32 @@ async function runScrapeSite(
     };
   }
 
-  markdown = markdown.slice(0, 60_000);
+  const pages: Array<FetchedPage & { sourceUrl: string }> = [{ ...primary, sourceUrl: url }];
 
-  // Persist to scrape_pages
-  const hash = await crypto.subtle
-    .digest("SHA-256", new TextEncoder().encode(markdown))
-    .then((buf) =>
-      Array.from(new Uint8Array(buf))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join(""),
-    );
-
-  let pageId = "";
+  // Deterministic breadth: high-signal sub-pages, page-capped.
   try {
-    const inserted = await pgRest<[{ id: string }]>(supabaseUrl, key, "scrape_pages", {
-      method: "POST",
-      headers: { Prefer: "return=representation,resolution=merge-duplicates" },
-      body: JSON.stringify({
-        org_id: state.orgId,
-        normalized_url: state.submittedUrl,
-        source_url: state.submittedUrl,
-        content_hash: hash,
-        title: url,
-        markdown,
-        scrape_meta: { source },
-      }),
-    });
-    pageId = inserted[0]?.id ?? "";
+    const base = new URL(url);
+    for (const link of discoverHighSignalLinks(primary.markdown, base, MAX_SCRAPE_PAGES - 1)) {
+      const sub = await fetchPageMarkdown(link);
+      if (sub.markdown && sub.markdown.length >= 100) {
+        pages.push({ ...sub, sourceUrl: link });
+      }
+    }
   } catch {
-    // non-fatal — markdown is already in memory
+    // breadth is best-effort — the primary page already succeeded
   }
 
+  // Persist each page (claim-check ids land in scrapePageIds for Wave 6 rehydration).
+  const pageIds: string[] = [];
+  for (const p of pages) {
+    const id = await persistScrapePage(supabaseUrl, key, state.orgId, state.submittedUrl, p);
+    if (id) pageIds.push(id);
+  }
+
+  const combined = pages.map((p) => p.markdown).join("\n\n---\n\n").slice(0, 60_000);
   return {
-    scrapeMarkdown: markdown,
-    scrapePageIds: pageId ? [pageId] : [],
+    scrapeMarkdown: combined,
+    scrapePageIds: pageIds,
     nextNode: "profile_business",
     step: state.step + 1,
     error: null,
