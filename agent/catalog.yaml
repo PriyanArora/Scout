@@ -68,7 +68,7 @@ tools:
   - id: sharepoint
     name: SharePoint
     category: Content platform
-    pillars: ["Operations & Efficiency", "Cybersecurity & Risk Management"]
+    pillars: ["Operations & Efficiency", "Cybersecurity & Risk"]
     what_it_does: Stores documents, intranet content, and lists.
     best_for: ["document workflows", "knowledge bases", "controlled document storage"]
     integrates_with: ["Teams", "Power Automate", "Microsoft 365"]
@@ -442,7 +442,7 @@ tools:
   - id: github
     name: GitHub
     category: Developer platform
-    pillars: ["Operations & Efficiency", "Cybersecurity & Risk Management"]
+    pillars: ["Operations & Efficiency", "Cybersecurity & Risk"]
     what_it_does: Source control, automation, and CI/CD.
     best_for: ["repo workflows", "CI checks", "deployment pipelines"]
     integrates_with: ["Actions", "Slack", "Vercel"]
