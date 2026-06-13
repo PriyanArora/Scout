@@ -41,14 +41,14 @@ Thumbs.db
 .vscode/
 
 # Local assistant/spec context
-.agents/
-.claude/
-claude/
-CLAUDE.md
-SPEC.md
-README.md
-docs/
-.github/
+# .agents/
+# .claude/
+# claude/
+# CLAUDE.md
+# SPEC.md
+# README.md
+# docs/
+# .github/
 
 # Generated exports
 exports/
