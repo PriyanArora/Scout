@@ -5,13 +5,15 @@ interface ReportPublic {
   summary: string;
   business_profile: Record<string, unknown>;
   opportunities: unknown[];
+  ranked?: unknown[];
   discovery_questions: unknown[];
   created_at: string;
 }
 
 export function PublicReportView({ report }: { report: ReportPublic }) {
   const profile = report.business_profile as { name?: string; industry?: string; description?: string } | null;
-  const opps = report.opportunities as Array<{
+  // Consistent with the report viewer/PDF: the ranked list is canonical (Wave 6 de-dup).
+  const opps = ((report.ranked?.length ? report.ranked : report.opportunities) ?? []) as Array<{
     id: string; title: string; pillar: string; impactScore: number; quadrant: string;
   }>;
 

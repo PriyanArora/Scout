@@ -201,4 +201,38 @@ begin
   raise notice 'test6 PASS: run marked failed after max_attempts reached';
 end $$;
 
+-- -------------------------------------------------------------------------
+-- Test 7: checkpoint claim-check (Wave 6 #23) — the durable checkpoint stores
+-- page ids, NOT the raw scrape markdown (SPEC red line), and a resumed run can
+-- rehydrate the markdown from scrape_pages by id (resume-from-mid-pipeline).
+-- -------------------------------------------------------------------------
+do $$
+declare
+  ids uuid[];
+  slim jsonb;
+  rehydrated text;
+begin
+  insert into public.scrape_pages (org_id, normalized_url, source_url, content_hash, markdown) values
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'https://ck.example/', 'https://ck.example/', 'ck-hash-a', 'PAGE A CONTENT'),
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'https://ck.example/', 'https://ck.example/about', 'ck-hash-b', 'PAGE B CONTENT');
+  select array_agg(id) into ids from public.scrape_pages where content_hash in ('ck-hash-a', 'ck-hash-b');
+
+  -- A slim checkpoint: page ids present, scrapeMarkdown empty.
+  slim := jsonb_build_object('scrapePageIds', to_jsonb(ids), 'scrapeMarkdown', '');
+  insert into public.langgraph_checkpoints (thread_id, checkpoint_ns, checkpoint_id, checkpoint)
+  values ('cccccccc-0000-0000-0000-000000000001', '', 'ck-claimcheck-1', slim);
+
+  if (slim->>'scrapeMarkdown') <> '' then
+    raise exception 'test7 FAIL: checkpoint must not store raw scrapeMarkdown (red line)';
+  end if;
+
+  -- Resume: markdown is recoverable from scrape_pages by the stored ids.
+  select string_agg(markdown, E'\n\n---\n\n') into rehydrated
+    from public.scrape_pages where id = any(ids);
+  if rehydrated not like '%PAGE A CONTENT%' or rehydrated not like '%PAGE B CONTENT%' then
+    raise exception 'test7 FAIL: rehydration did not recover page markdown';
+  end if;
+  raise notice 'test7 PASS: checkpoint claim-check (slim store + rehydrate from scrape_pages)';
+end $$;
+
 rollback;

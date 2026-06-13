@@ -126,8 +126,49 @@ async function rpc<T>(
 }
 
 // ---------------------------------------------------------------------------
-// Checkpoint adapter
+// Checkpoint adapter — claim-check slimming (INTEGRATION_PLAN §3 Wave 6 #23).
+//
+// Red-line fix: previously every checkpoint (~10–12/run) stored the full ~60K
+// scrapeMarkdown, contradicting the SPEC red line "Do not store raw scraped pages
+// inside every checkpoint" and the ProjectSummary claim that checkpoints hold page
+// ids. Now the durable checkpoint stores only scrapePageIds; scrapeMarkdown is
+// rehydrated from scrape_pages on resume. The in-memory state for the current
+// invocation still carries the markdown. agent/src is already slim (its
+// ScoutGraphState has no scrapeMarkdown field), so this is Edge-only.
 // ---------------------------------------------------------------------------
+
+// Strip the bulky scrapeMarkdown before persisting; keep the claim-check (ids).
+function slimCheckpoint(state: ScoutGraphState): ScoutGraphState {
+  return { ...state, scrapeMarkdown: "" };
+}
+
+// Rehydrate scrapeMarkdown from scrape_pages by id when a resumed checkpoint has
+// ids but no markdown. Best-effort: on any failure the node proceeds (markdown
+// stays empty → low-signal handling), never blocking the run.
+async function rehydrateState(
+  state: ScoutGraphState,
+  url: string,
+  key: string,
+): Promise<ScoutGraphState> {
+  if (state.scrapeMarkdown || !state.scrapePageIds?.length) return state;
+  try {
+    const q = new URLSearchParams({
+      id: `in.(${state.scrapePageIds.join(",")})`,
+      select: "id,markdown",
+    });
+    const rows = await pgRest<Array<{ id: string; markdown: string }>>(url, key, `scrape_pages?${q}`);
+    // Preserve scrapePageIds order.
+    const byId = new Map(rows.map((r) => [r.id, r.markdown]));
+    const markdown = state.scrapePageIds
+      .map((id) => byId.get(id) ?? "")
+      .filter(Boolean)
+      .join("\n\n---\n\n")
+      .slice(0, 60_000);
+    return { ...state, scrapeMarkdown: markdown };
+  } catch {
+    return state;
+  }
+}
 
 async function loadCheckpoint(
   url: string,
@@ -164,7 +205,7 @@ async function saveCheckpoint(
       checkpoint_id: checkpointId,
       parent_checkpoint_id: parentId,
       type: "scout_state",
-      checkpoint: state,
+      checkpoint: slimCheckpoint(state),
       metadata: { nextNode: state.nextNode, step: state.step },
     }),
   });
@@ -996,7 +1037,10 @@ async function runFinalize(
     status: "completed",
     summary: `Discovery completed for ${state.submittedUrl}. ${state.opportunities.length} opportunity/ies identified.`,
     business_profile: state.businessProfile ?? {},
-    opportunities: state.opportunities,
+    // De-dup (Wave 6 #23): score_and_rank ranks opportunities in place, so the two
+    // columns were identical. Store the ranked list once in `ranked`; `opportunities`
+    // stays empty. All consumers read `ranked ?? opportunities`.
+    opportunities: [],
     ranked: state.opportunities,
     requirements: state.requirements ?? {},
     solution_design: state.solutionDesign ?? {},
@@ -1164,7 +1208,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   // --- load checkpoint ---
   const prior = await loadCheckpoint(supabaseUrl, supabaseKey, runId);
-  const baseState: ScoutGraphState = prior?.state ?? {
+  // Claim-check: resumed checkpoints are slim (no scrapeMarkdown) — rehydrate from
+  // scrape_pages by id before running the node (Wave 6 #23).
+  const loadedState = prior ? await rehydrateState(prior.state, supabaseUrl, supabaseKey) : null;
+  const baseState: ScoutGraphState = loadedState ?? {
     runId,
     nextNode: leasedRun.next_node,
     step: 0,
