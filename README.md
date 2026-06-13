@@ -67,10 +67,10 @@ A completed run populates a `reports` row:
 | Field | Description |
 |---|---|
 | `business_profile` | Company name, industry, size, services, evidence citations |
-| `opportunities` | 3–6 ranked opportunities: NorthBound pillar, impact/effort/confidence scores, quadrant (quick-win / strategic / consider / deprioritize), tool IDs |
+| `opportunities` | 3–6 ranked opportunities: NorthBound pillar, impact/effort/confidence scores, quadrant (quick-win / strategic / fill-in / thankless), tool IDs |
 | `requirements` | Requirements brief for the top opportunity |
 | `solution_design` | High-level architecture for the top solution |
-| `top_workflow` | n8n archetype name + placeholder key→value map |
+| `top_workflow` | n8n archetype + a merged, `validateWorkflow`-checked n8n workflow (pattern-grounded via `agent/patterns.yaml`) + placeholder map |
 | `playbook` | Editable implementation playbook (markdown) |
 | `discovery_questions` | 5–8 questions for the first client meeting |
 | `readiness` | Technology and organizational readiness snapshot |
@@ -132,7 +132,8 @@ supabase db seed
 ## Limitations
 
 - **One active run per idempotency key.** Duplicate (url + notes) pairs return the existing active run.
-- **Scrape quality.** Jina Reader covers ~90% of public sites. Enable `FIRECRAWL_API_KEY` for the remainder.
+- **Scrape quality.** Jina Reader covers ~90% of public sites; the direct-fetch fallback uses defuddle main-content extraction (Node layer). Enable `FIRECRAWL_API_KEY` for the remainder.
+- **PDF export is available** at `/api/report/[runId]/pdf` (react-pdf, no headless browser); a `@media print` stylesheet is the zero-dependency fallback.
 - **Token budget.** ~30K–60K tokens per run. Runs that exceed 3 retry attempts are marked failed.
 - **No re-run versioning UI.** Re-runs create a new `runs` row; a future version selector is not in v1.
 - **n8n requires self-hosting or n8n Cloud.** Generated templates use generic credential placeholders that must be filled before import.

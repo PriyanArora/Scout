@@ -66,6 +66,35 @@ supabase secrets set \
 
 Store these values — you will need them for Vercel.
 
+#### Optional expansion env (all default-off — preserve the keyless $0 core path)
+
+```bash
+# Firmographic enrichment prototype (keyless CC0 Wikidata; cited)
+supabase secrets set SCOUT_ENRICH_ENABLED=  SCOUT_EDGAR_USER_AGENT=
+# Optional bounded search (non-$0 if used) and optional tracing (2nd vendor; demo skips)
+supabase secrets set TAVILY_API_KEY=  HELICONE_API_KEY=  LANGFUSE_PUBLIC_KEY=  LANGFUSE_SECRET_KEY=
+```
+
+#### Migrations added by the expansion (applied by `supabase db push`)
+
+- `20260613000200_wave0_storage_reliability.sql` — LZ4 compression on the big TOAST
+  columns, scrape-page TTL 30d→14d + terminal-checkpoint prune, `fail_run_node`
+  exponential backoff+jitter. **For immediate LZ4 effect on existing rows**, backfill:
+  `UPDATE public.scrape_pages SET markdown = markdown;` (and similarly for reports).
+- `20260613000300_wave3_scrape_conditional.sql` — `scrape_pages.etag` / `last_modified`
+  for conditional-request crawling.
+
+#### Offline build steps (run before deploy / in CI; runtime never calls api.n8n.io)
+
+```bash
+npm run build:n8n-index   # regenerate agent/n8n_templates/index.json from shipped templates
+npm run build:edge-n8n    # regenerate supabase/functions/agent/n8n.ts (templates + merge/validate)
+```
+
+The `evals` workflow validates generated workflows against real node schemas with
+**czlonkowski/n8n-mcp** at a pinned SHA (ADR 007) — this closes the P8 import smoke
+test; the hermetic `agent/src/n8n/importability.test.ts` is the always-on gate.
+
 ### 2.4 Deploy the Edge Function
 
 ```bash

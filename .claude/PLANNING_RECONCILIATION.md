@@ -99,31 +99,46 @@ The one change that touches a **red line** — checkpoint markdown bloat — *fi
 
 ---
 
-## 5. Inconsistencies between the `.claude/` plan and **root** docs — follow-ups (NOT edited by this task)
+## 5. Root-doc follow-ups — RESOLVED by the implementation (Task #5)
 
-Per the original task, root docs were **not** edited. The `claude/` (lowercase) workflow files **were**
-updated per the user's later instruction (§6). Remaining root-doc follow-ups:
+The plan-alignment implementation landed all waves; the root-doc follow-ups are now closed:
 
-- **F-1 — `SPEC.md`:** add the planned post-P17 integrations (prompt caching as *implemented*, structured
-  outputs, patterns.yaml, n8n template index/n8n-mcp, PDF export) to scope; SPEC currently lists prompt
-  caching/telemetry as if present but **no `cache_control` exists in code yet**.
-- **F-2 — `docs/ARCHITECTURE.md`:** the node→model table and "Jina + optional Firecrawl" line will change
-  once defuddle + multi-page breadth + conditional crawl land; add `patterns.yaml` and the n8n index to
-  the data-flow.
-- **F-3 — `docs/RUNBOOK.md`:** add new env (`SCOUT_ENRICH_ENABLED`, `SCOUT_EDGAR_USER_AGENT`, optional
-  `TAVILY_API_KEY`/tracing keys), the LZ4 migration, the offline n8n-index build step, and the n8n-mcp
-  CI import smoke test (closes the RUNBOOK's implicit P8 gap).
-- **F-4 — `README.md`:** "PDF export out of scope for v1" and the quadrant naming
-  (`consider`/`deprioritize` in README vs `fill-in`/`thankless` in code) will need updating once P13
-  export lands; refresh the limitations list.
-- **F-5 — `docs/SECURITY.md`:** record the ipaddr.js SSRF upgrade and the documented **Edge
-  DNS-rebinding residual**; add rate-limiting once P10 closes.
-- **F-6 — `docs/adr/`:** new ADRs warranted for prompt-caching prefix design, structured-outputs schema
-  subset, the n8n template-index + n8n-mcp validation, and checkpoint claim-check slimming.
-- **F-7 — Pre-existing pillar drift (independent of this plan):** the Zod enum says
-  `Cybersecurity & Risk` while `agent/catalog.yaml` + the Edge prompt say
-  `Cybersecurity & Risk Management`. `patterns.yaml` and the Zod single-source work (Wave 2) must
-  reconcile these to one spelling. Flagged, not fixed here.
+- **F-1 — `SPEC.md`:** ✅ added the "M8 — Post-P17 research-driven expansion (implemented)" section.
+  Prompt caching/structured outputs are now actually in code, so SPEC's earlier descriptions are accurate.
+- **F-2 — `docs/ARCHITECTURE.md`:** ✅ `scrape_site` line updated (defuddle + multi-page + conditional);
+  `generate_workflow` line updated (patterns.yaml + merge/validate + index); token/reliability layer added.
+- **F-3 — `docs/RUNBOOK.md`:** ✅ added optional expansion env, the two new migrations (LZ4/TTL/backoff,
+  conditional cols), the offline `build:n8n-index`/`build:edge-n8n` steps, and the n8n-mcp CI validator.
+- **F-4 — `README.md`:** ✅ quadrant naming corrected to `fill-in`/`thankless` (matches the Zod enum);
+  limitations note PDF export is available + defuddle fallback.
+- **F-5 — `docs/SECURITY.md`:** ✅ ipaddr.js SSRF upgrade + the Edge DNS-rebinding residual documented.
+  Rate-limiting (P10) remains a documented deferred prototype (web uses PostgREST not a pg pool).
+- **F-6 — `docs/adr/`:** ✅ ADR 007 (n8n-mcp validation) added. Prompt-caching/structured-outputs/
+  checkpoint-slimming designs are documented inline (code comments + `.claude/IMPLEMENTATION_LOG.md`);
+  further standalone ADRs are optional.
+- **F-7 — Pillar drift:** ✅ RESOLVED (Wave 2) — standardised on `Cybersecurity & Risk` (the validated
+  Zod enum + both identify prompts); fixed catalog.yaml + SQL seed. (Note: this *diverges* from the
+  Decision Log's claim that the long form was "canonical" — the code enforces the short form. See
+  `.claude/IMPLEMENTATION_LOG.md` §3.)
+
+### Implementation deviations from the plan (all documented, none forced)
+
+- **Edge structured outputs** scoped to the 2 simplest schemas behind an auto-retry-without-it guard
+  (the Edge is Deno/raw-fetch and unrunnable locally; a malformed `output_config` fails the *request*).
+  Other Edge nodes rely on the adopted jsonrepair net.
+- **defuddle** runs in the Node/Vercel layer only (Deno-Edge compat unverified per the plan's own gotcha).
+- **Message Batches API** (evals/triage): documented in `promptfooconfig.yaml`; not wired (the LLM-judge
+  workflow was itself deferred at P16, and promptfoo's interactive provider doesn't batch).
+- **gte-small semantic template retrieval** (#18): deferred prototype — needs the Edge embedding runtime;
+  `lookupTemplate` is the implemented non-vector retrieval.
+- **rate-limiter-flexible / seen_signatures / jsondiffpatch / Helicone**: PROTOTYPE per the plan — left as
+  documented seams (env in `.env.example`); the ADOPT security items (ipaddr.js, `.strict()`) shipped.
+- **Edge `generate_workflow` parity**: ported templates+merger+validator into a generated module verified
+  "by-proxy" (logic ported from unit-tested agent/src; template data drift-guarded byte-for-byte), since
+  Deno isn't runnable here.
+
+A **MCP grounding bug** not anticipated by the plan was found and fixed during Wave 2: `mcp/src/tools/map-tools.ts`
+shipped a separate, wrong catalog (ms-365/twilio/stripe/openai) with no filtering — now canonical + filtered.
 
 ---
 

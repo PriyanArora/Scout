@@ -51,20 +51,22 @@ The 12-node pipeline processes one URL end-to-end:
 
 | # | Node | Model | Description |
 |---|------|-------|-------------|
-| 1 | `scrape_site` | — | Jina Reader + optional Firecrawl; stores in `scrape_pages` |
+| 1 | `scrape_site` | — | Jina Reader → safe direct fetch (defuddle main-content extraction, Node layer) → optional Firecrawl; deterministic multi-page breadth (page-capped) + conditional requests (ETag/If-Modified-Since); stores in `scrape_pages` |
 | 2 | `profile_business` | Opus | Extract structured company profile with evidence |
 | 3 | `identify_opportunities` | Opus | Identify 3–6 automation/AI opportunities, cite evidence |
 | 4 | `score_and_rank` | — | Deterministic impact/effort scoring + quadrant assignment |
 | 5 | `map_tools` | Haiku | Map each opportunity to catalog IDs; reject out-of-catalog |
 | 6 | `draft_requirements` | Haiku | Requirements brief for the top opportunity |
 | 7 | `solution_design` | Haiku | High-level solution architecture |
-| 8 | `generate_workflow` | Haiku | Select n8n archetype; fill placeholders |
+| 8 | `generate_workflow` | Haiku | Pattern-grounded archetype select (`agent/patterns.yaml`); fill placeholders; merge + `validateWorkflow` (Edge at parity with `agent/src`); offline `n8n_templates/index.json` lookup |
 | 9 | `discovery_questions` | Haiku | 5–8 discovery questions for the client meeting |
 | 10 | `write_playbook` | Haiku | Implementation playbook (markdown) |
 | 11 | `critique` | Opus | Self-critique; flag low confidence / missing evidence |
 | 12 | `finalize` | — | Write `reports` row; set `runs.status = completed` |
 
 Expensive judgement nodes (2, 3, 11) use `claude-opus-4-8`. Cheap structured-output nodes (5–10) use `claude-haiku-4-5`. Nodes 1, 4, and 12 make no LLM calls.
+
+**Token/reliability layer (post-P17 expansion).** Every LLM node sends an identical, cacheable shared system prefix (`buildSystemPrefix` / Edge `SCOUT_SYSTEM_PREFIX`) with `cache_control` so the per-model cache amortises across the self-chained calls; the catalog lives in that prefix (single source: `agent/src/catalog/data.ts`, drift-guarded across YAML/SQL/Edge/MCP). Structured outputs (`output_config.format`) make profile/identify/map/discovery schema-valid by construction, with `jsonrepair` + a bounded retry as the safety net. `count_tokens` pre-flights the Opus nodes that carry the scrape blob. See `.claude/INTEGRATION_PLAN.md`.
 
 The full 12-node pipeline is implemented in `supabase/functions/agent/index.ts` (one node per Edge Function invocation). `agent/src/graph/` runs a 6-node local subset (`scrape_site` → `profile_business` → `identify_opportunities` → `score_and_rank` → `map_tools` → `discovery_questions`) used by fixture tests, evals, and the MCP server.
 

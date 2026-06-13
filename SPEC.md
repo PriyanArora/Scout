@@ -613,6 +613,28 @@ Each milestone is independently demoable; the goal is a **thin live vertical ear
 
 A working end-to-end free-tier core demo exists at **M3**; M4 makes it "compress the department," M5–M7 add the loop, MCP, and the credibility layer.
 
+### M8 — Post-P17 research-driven expansion (implemented)
+
+Layered on top of the P1–P17 system per `.claude/INTEGRATION_PLAN.md` (full status in
+`.claude/IMPLEMENTATION_LOG.md` / `claude/Progress.md`). All hold the hard constraints
+($0 infra, 30–60K tokens/run, 110s/node, Deno+Node TS, MIT/Apache/BSD, grounding sacred):
+
+- **Token/reliability:** shared cacheable system prefix + `cache_control` on every LLM
+  node (both paths); Anthropic **structured outputs** (`output_config.format` / `zodOutputFormat`);
+  **`jsonrepair`** safety net; **`count_tokens`** pre-flight on the scrape-blob Opus nodes.
+- **Single source:** one TS catalog (`agent/src/catalog/data.ts`) drift-guarded across YAML/SQL/Edge/MCP;
+  pillar enum reconciled to `Cybersecurity & Risk`; **MCP** rewritten to `McpServer`/`registerTool`.
+- **Discovery depth:** **defuddle** main-content extraction (Node layer); deterministic multi-page
+  breadth (Edge parity); conditional-request crawl (`ETag`/`Last-Modified`); flag-gated keyless enrich.
+- **Grounding → n8n:** `agent/patterns.yaml` (EIP + Workflow Patterns) drives archetype selection;
+  Edge `generate_workflow` now merges + validates; offline `n8n_templates/index.json`; **n8n-mcp** CI
+  validator (closes the P8 import smoke test).
+- **Deliverable/security:** **react-markdown** playbook + **react-pdf** export (closes P13);
+  **ipaddr.js** SSRF + `.strict()` webhook; **promptfoo** grounding gate.
+- **Storage/durability:** Postgres **LZ4**, TTL/prune, SQL backoff+jitter, and **checkpoint
+  claim-check slimming** — which *fixes* the prior red-line violation (raw markdown was stored in
+  every checkpoint; now only page ids, rehydrated from `scrape_pages`).
+
 ---
 
 ## 19. Cost estimate (free-tier core)
