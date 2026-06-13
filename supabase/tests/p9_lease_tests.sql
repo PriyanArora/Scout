@@ -163,7 +163,11 @@ declare
   ok boolean;
   run_row public.runs;
 begin
-  -- Re-acquire and fail twice more
+  -- Re-acquire and fail twice more. After a failure fail_run_node now sets a
+  -- backoff lease_until in the future (exponential + jitter), so simulate the
+  -- heartbeat waiting out the backoff window before each re-acquire.
+  update public.runs set lease_until = now() - interval '1 second'
+    where id = 'cccccccc-0000-0000-0000-000000000001';
   leased := public.acquire_run_lease(
     'cccccccc-0000-0000-0000-000000000001',
     'fail-inv-2',
@@ -176,6 +180,8 @@ begin
     '{"message":"failure 2"}'::jsonb
   );
 
+  update public.runs set lease_until = now() - interval '1 second'
+    where id = 'cccccccc-0000-0000-0000-000000000001';
   leased := public.acquire_run_lease(
     'cccccccc-0000-0000-0000-000000000001',
     'fail-inv-3',
