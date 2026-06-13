@@ -628,5 +628,5 @@ Each gate maps to one phase: G1 = P1, G2 = P2, and so on. Advance a gate when ph
 - [x] Security: `ipaddr.js` SSRF range classification on the web path; `.strict()` webhook schema; Edge DNS-rebinding residual documented in `docs/SECURITY.md`. *(prototype, deferred)* `rate-limiter-flexible` (P10) + `seen_signatures` nonce — documented seams; web uses Supabase PostgREST not a raw pg pool, and free-tier runs are naturally bounded.
 - [x] `promptfoo` regression gate (`promptfooconfig.yaml` + `evals.yml` job, key-gated so default is $0) asserting catalog grounding/no-hallucination. Batch-API judge noted in config. *(prototype, deferred)* `jsondiffpatch` version-diff, Helicone tracing — documented (env in `.env.example`).
 
-### Wave 6 — Durable-runtime change (LAST, behind green P9 tests)
-- [ ] Checkpoint claim-check slimming (store `scrapePageIds`, rehydrate `scrapeMarkdown` from `scrape_pages`) + de-dup `reports.opportunities`/`ranked`. **One-way door; fixes the existing red-line markdown-in-checkpoint violation.**
+### Wave 6 — Durable-runtime change (LAST, behind green P9 tests) `[implemented]`
+- [x] Checkpoint claim-check slimming: Edge `slimCheckpoint()` stores `scrapePageIds` (not `scrapeMarkdown`); `rehydrateState()` recovers markdown from `scrape_pages` on resume. De-dup `reports.opportunities`/`ranked` (ranked canonical; consumers read `ranked ?? opportunities`). **Fixes the red-line markdown-in-checkpoint violation.** Gated by P9 lease tests + new claim-check test 7 (resume-from-mid-pipeline). agent/src was already slim → Edge-only.

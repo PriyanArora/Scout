@@ -150,4 +150,8 @@ _(appended as encountered)_
   documented. promptfoo grounding gate (key-gated, $0 default). **Deferred prototypes** (plan = PROTOTYPE):
   rate-limiter-flexible / seen_signatures (web is PostgREST, not a pg pool; free-tier naturally bounded),
   jsondiffpatch, Helicone (env seam in .env.example).
-- [ ] Wave 6 · [ ] Final drift check
+- [x] **Wave 6** (LAST, one-way door) — Edge checkpoint claim-check: `slimCheckpoint()` strips the ~60K
+  scrapeMarkdown (red-line fix), `rehydrateState()` recovers it from scrape_pages by id on resume. Report
+  array de-dup (ranked canonical). Gated by P9 lease tests + new claim-check test 7. agent/src was already
+  slim. **Sequencing held: ran only after all earlier waves were green.**
+- [ ] Final drift check
