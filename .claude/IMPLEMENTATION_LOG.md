@@ -154,4 +154,18 @@ _(appended as encountered)_
   scrapeMarkdown (red-line fix), `rehydrateState()` recovers it from scrape_pages by id on resume. Report
   array de-dup (ranked canonical). Gated by P9 lease tests + new claim-check test 7. agent/src was already
   slim. **Sequencing held: ran only after all earlier waves were green.**
-- [ ] Final drift check
+- [x] **Final drift check** — verified all 24 ADOPT items present at specified pin/location/seam (exact pins:
+  defuddle 0.18.1, jsonrepair 3.14.0, react-markdown 10.1.0, remark-gfm 4.0.1, @react-pdf/renderer 4.5.1,
+  ipaddr.js 2.4.0, mcp zod 4.4.3; n8n-mcp SHA b0f5e25). Sequencing held (Waves 0→6, checkpoint slimming last).
+  Hard constraints all hold ($0/token/110s/Deno-Node/license/grounding). Docs reconciled (SPEC M8,
+  ARCHITECTURE, RUNBOOK, README, SECURITY, ADR 007, PLANNING_RECONCILIATION §5). Gates green: typecheck,
+  lint, 244 tests (197 agent + 32 web + 15 mcp), Edge esbuild parse, web `next build`, generated artifacts
+  in sync. Verification limits (no Deno / no Supabase CLI) handled via esbuild parse + drift-guards +
+  verified-by-proxy ports.
+
+## 5. Verdict
+
+All seven planned waves implemented and committed in sequence, repo green at every commit. The plan was
+implemented, not redesigned; every deviation is a documented safe/reversible choice driven by a real
+constraint (no Deno runtime, demo-criticality, or PROTOTYPE status), recorded here and in
+`PLANNING_RECONCILIATION.md` §5 — never a silent substitution.
