@@ -106,4 +106,14 @@ _(appended as encountered)_
   terminal-checkpoint prune, `fail_run_node` backoff+jitter. P9 test 6 fixed to simulate heartbeat backoff
   wait (latent bug: flat-30s already left lease in the future → re-acquire blocked; tests were manual-only,
   never executed).
-- [ ] Wave 1 · [ ] Wave 2 · [ ] Wave 3 · [ ] Wave 4 · [ ] Wave 5 · [ ] Wave 6 · [ ] Final drift check
+- [x] **Wave 1** — both paths. (1a) shared cacheable prefix + cache_control: SDK had caching but the
+  breakpoint sat after node-specific text (only same-node retry hits); now an identical prefix block 0 +
+  node-specific block 1 → cross-node hits. Edge had NO caching; added `SCOUT_SYSTEM_PREFIX` + `systemWithPrefix`
+  on all 9 call sites. (1b) jsonrepair (`3.14.0` SDK dep; `npm:jsonrepair@3.14.0` Edge). (1c) structured outputs:
+  SDK `zodOutputFormat` (GA in 0.102; SDK strips subset-banned keywords) on 4 nodes; Edge `output_config` on
+  profile + map with auto-retry-without-it on 4xx (safe under no-Deno). (1d) `count_tokens` preflight trims the
+  scrape blob on the profile + identify Opus nodes. **Deviations (resolved):** Edge structured outputs scoped
+  to the 2 simplest schemas (profile/map) behind the auto-fallback guard rather than all 6 raw-fetch nodes —
+  the unverifiable raw-fetch schema risk to the demo is contained by the guard; other Edge nodes rely on the
+  adopted jsonrepair net. count_tokens applied to profile+identify (carry the blob), not critique (8K summary).
+- [ ] Wave 2 · [ ] Wave 3 · [ ] Wave 4 · [ ] Wave 5 · [ ] Wave 6 · [ ] Final drift check

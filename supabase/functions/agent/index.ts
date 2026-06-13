@@ -234,6 +234,55 @@ async function anthropicCall(
   return res.json() as Promise<AnthropicMessage>;
 }
 
+// count_tokens pre-flight: bound the input before a node fires so the 60K-scrape
+// nodes can't 413 or trigger max_tokens truncation-retries (INTEGRATION_PLAN §3
+// Wave 1 #5). Returns null on any failure so the node proceeds unguarded.
+const MAX_INPUT_TOKENS = 50_000; // per-call input ceiling; well within model context + run budget
+
+async function countInputTokens(
+  apiKey: string,
+  model: string,
+  system: SystemPrompt,
+  messages: MessageParam[],
+): Promise<number | null> {
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages/count_tokens", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ model, system, messages }),
+    });
+    if (!res.ok) return null;
+    const j = (await res.json()) as { input_tokens?: number };
+    return typeof j.input_tokens === "number" ? j.input_tokens : null;
+  } catch {
+    return null;
+  }
+}
+
+// Trim `markdown` so the assembled request stays under MAX_INPUT_TOKENS. Bounded
+// to 3 count_tokens probes; no-ops (returns markdown unchanged) if the endpoint
+// is unavailable.
+async function preflightTrimMarkdown(
+  apiKey: string,
+  model: string,
+  system: SystemPrompt,
+  build: (md: string) => MessageParam[],
+  markdown: string,
+): Promise<string> {
+  let md = markdown;
+  for (let i = 0; i < 3; i++) {
+    const tokens = await countInputTokens(apiKey, model, system, build(md));
+    if (tokens === null || tokens <= MAX_INPUT_TOKENS) return md;
+    const ratio = (MAX_INPUT_TOKENS / tokens) * 0.9; // 10% headroom
+    md = md.slice(0, Math.max(2000, Math.floor(md.length * ratio)));
+  }
+  return md;
+}
+
 function extractText(msg: AnthropicMessage): string {
   const block = msg.content.find((b) => b.type === "text");
   if (!block?.text) throw new Error("No text content in Anthropic response");
@@ -530,6 +579,14 @@ async function runProfileBusiness(
 Schema:
 {"name":string,"industry":string,"size":string,"description":string,"primaryServices":string[],"technologyIndicators":string[],"marketPosition":string,"evidenceSnippets":string[]}`;
 
+  // Pre-flight: trim the scrape blob to fit the input budget before the Opus call.
+  const buildProfileMsgs = (md: string): MessageParam[] => [
+    { role: "user", content: `<scraped_content>\n${md}\n</scraped_content>\n\nExtract the JSON profile:` },
+  ];
+  const trimmed = await preflightTrimMarkdown(
+    apiKey, "claude-opus-4-8", systemWithPrefix(system), buildProfileMsgs, markdown.slice(0, 40_000),
+  );
+
   const profileFormat: OutputConfig = {
     format: {
       type: "json_schema",
@@ -553,7 +610,7 @@ Schema:
 
   const msg = await anthropicCall(
     apiKey, "claude-opus-4-8", 2048, systemWithPrefix(system),
-    [{ role: "user", content: `<scraped_content>\n${markdown.slice(0, 40_000)}\n</scraped_content>\n\nExtract the JSON profile:` }],
+    buildProfileMsgs(trimmed),
     profileFormat,
   );
 
@@ -583,9 +640,14 @@ Output ONLY a valid JSON array. Each object:
   const profileSummary = profile
     ? `Business: ${String(profile.name ?? "unknown")} (${String(profile.industry ?? "unknown")})\n`
     : "";
-  const content = `${profileSummary}<scraped_content>\n${markdown.slice(0, 40_000)}\n</scraped_content>\n\nIdentify opportunities as JSON array:`;
+  const buildIdentifyMsgs = (md: string): MessageParam[] => [
+    { role: "user", content: `${profileSummary}<scraped_content>\n${md}\n</scraped_content>\n\nIdentify opportunities as JSON array:` },
+  ];
+  const trimmed = await preflightTrimMarkdown(
+    apiKey, "claude-opus-4-8", systemWithPrefix(system), buildIdentifyMsgs, markdown.slice(0, 40_000),
+  );
 
-  const msg = await anthropicCall(apiKey, "claude-opus-4-8", 4096, systemWithPrefix(system), [{ role: "user", content }]);
+  const msg = await anthropicCall(apiKey, "claude-opus-4-8", 4096, systemWithPrefix(system), buildIdentifyMsgs(trimmed));
   const delta = toCostDelta(msg);
   const usage = addUsage(state.usage, delta);
 

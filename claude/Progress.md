@@ -599,11 +599,11 @@ Each gate maps to one phase: G1 = P1, G2 = P2, and so on. Advance a gate when ph
 - [x] Terminal-checkpoint drop + shorter `scrape_pages` TTL (30d→14d) in `prune_scout_data()`. (eager-at-finalize drop folded into Wave 6 finalize rewrite)
 - [x] Exponential backoff + jitter in `fail_run_node` (`30·2^attempts ± jitter`, capped 1800s). P9 test 6 made runnable (simulates heartbeat waiting out backoff).
 
-### Wave 1 — Token & reliability wins (both paths)
-- [ ] Shared cacheable system prefix + `cache_control` on every Opus/Haiku node (measure via `cache_*` columns).
-- [ ] `count_tokens` pre-flight budget guard in front of the 3 Opus nodes.
-- [ ] Anthropic Structured Outputs (Edge: hand-rolled `output_config` + strip-unsupported-keywords; SDK: `messages.parse`/`zodOutputFormat`).
-- [ ] `jsonrepair` safety net between `extractJson` and `JSON.parse`.
+### Wave 1 — Token & reliability wins (both paths) `[implemented]`
+- [x] Shared cacheable system prefix + `cache_control` on every Opus/Haiku node (Edge `SCOUT_SYSTEM_PREFIX`/`systemWithPrefix`; SDK `buildSystemPrefix`). Measure via `cache_*` columns at runtime.
+- [x] `count_tokens` pre-flight budget guard (Edge `preflightTrimMarkdown` on the profile + identify Opus nodes — the ones carrying the scrape blob; critique carries only an 8K summary so needs no trim).
+- [x] Anthropic Structured Outputs (SDK: `zodOutputFormat` on profile/identify/map/discovery; Edge: hand-rolled `output_config` on profile + map with auto-retry-without-it on 4xx). n8n-fill excluded (open record).
+- [x] `jsonrepair` safety net between `extractJson`/`JSON.parse` (SDK `parser.ts` + Edge `extractJson`, `npm:jsonrepair@3.14.0`).
 
 ### Wave 2 — One schema source + MCP modernization
 - [ ] `z.toJSONSchema()` single source in `agent/src/schemas/index.ts` (derive Anthropic + MCP schemas + `CATALOG_IDS`).
