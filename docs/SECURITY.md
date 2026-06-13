@@ -124,6 +124,22 @@ The `.gitignore` excludes `.env`, `.env.local`, and `.env.*.local`. The gitleaks
 2. If the account is compromised, disable it in Supabase dashboard
 3. Audit `runs` and `reports` for rows accessed by that user's org_id
 
+## SSRF defense & the Edge DNS-rebinding residual
+
+The web path (`web/src/lib/url.ts` `isSafeUrl`) classifies the target with
+**ipaddr.js** range detection, rejecting loopback / private / link-local /
+unique-local / CGNAT / unspecified / reserved ranges — including the
+**decimal / hex / octal integer** and **IPv4-mapped IPv6** forms that a hostname
+regex misses. Direct-fetch follows redirects manually and re-checks every hop.
+
+**Residual — Edge DNS rebinding (documented, not fully solved):** the Supabase
+Edge `fetch` cannot pin the resolved IP for a hostname, so a host that passes the
+name check at validation time but resolves to a private IP at fetch time (DNS
+rebinding) is not fully closed in the Edge runtime. Mitigations in place: HTTPS-only,
+the keyless Jina path is the primary fetch (direct fetch is a fallback), and the
+integer / IPv6-literal bypasses are blocked. A full fix needs resolve-then-pin,
+which the Edge runtime does not expose.
+
 ## Security Checklist for Contributors
 
 - [ ] All new API endpoints check auth before any database query
