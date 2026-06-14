@@ -71,7 +71,7 @@ export function isSafeUrl(raw: string): boolean {
     }
 
     // Hostname (not an IP literal): block obvious private names. DNS-resolution
-    // pinning isn't possible on the Edge runtime — see docs/SECURITY.md residual.
+    // pinning isn't possible on the Edge runtime — see claude/OPERATIONS.md (security) residual.
     if (/^(localhost$|.*\.local$|.*\.internal$)/i.test(host)) return false;
     return true;
   } catch {

@@ -2,7 +2,7 @@
   "generatedAt": "2026-06-13",
   "provenance": {
     "shipped": "Scout-authored archetypes (this repo).",
-    "corpusBuild": "Full corpus (official api.n8n.io + Zie619/n8n-workflows) is an offline step filtered to the catalog-mappable SaaS subset; only shipped templates are bundled. See docs/RUNBOOK.md.",
+    "corpusBuild": "Full corpus (official api.n8n.io + Zie619/n8n-workflows) is an offline step filtered to the catalog-mappable SaaS subset; only shipped templates are bundled. See claude/OPERATIONS.md.",
     "licensing": "n8n Sustainable Use License for any bundled community templates; attribute authors per-template."
   },
   "templates": [

@@ -4,7 +4,7 @@
 // Produces agent/n8n_templates/index.json from the bundled archetype templates so
 // the runtime looks up templates locally and NEVER calls api.n8n.io. Only the
 // templates Scout actually ships are bundled; the full official-API + Zie619
-// corpus build is a separate offline step (documented in docs/RUNBOOK.md) and is
+// corpus build is a separate offline step (documented in claude/OPERATIONS.md) and is
 // filtered to the catalog-mappable SaaS subset. Re-run: `node agent/scripts/build-n8n-index.mjs`.
 //
 // Provenance/licensing: the 5 archetypes are Scout-authored (this repo, MIT-aligned).
@@ -75,7 +75,7 @@ const index = {
   provenance: {
     shipped: "Scout-authored archetypes (this repo).",
     corpusBuild:
-      "Full corpus (official api.n8n.io + Zie619/n8n-workflows) is an offline step filtered to the catalog-mappable SaaS subset; only shipped templates are bundled. See docs/RUNBOOK.md.",
+      "Full corpus (official api.n8n.io + Zie619/n8n-workflows) is an offline step filtered to the catalog-mappable SaaS subset; only shipped templates are bundled. See claude/OPERATIONS.md.",
     licensing: "n8n Sustainable Use License for any bundled community templates; attribute authors per-template.",
   },
   templates,
