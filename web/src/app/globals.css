@@ -1,0 +1,26 @@
+/* Print stylesheet — the $0 "Save as PDF" floor (INTEGRATION_PLAN §3 Wave 5 #20,
+   Decision Log Area G "CSS @media print baseline"). Complements the react-pdf
+   export route: a clean browser print of the report page with chrome hidden. */
+@media print {
+  header button,
+  footer,
+  button,
+  a[download] {
+    display: none !important;
+  }
+  article {
+    max-width: 100%;
+  }
+  details {
+    /* expand collapsed workflow JSON when printing */
+    display: block;
+  }
+  body {
+    font-size: 12pt;
+    color: #000;
+    background: #fff;
+  }
+  section {
+    break-inside: avoid;
+  }
+}

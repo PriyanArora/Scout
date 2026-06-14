@@ -63,6 +63,8 @@ export async function insertScrapeCache(
       title: result.title ?? null,
       markdown: result.markdown,
       scrape_meta: { source: result.source, lowSignal: result.lowSignal },
+      etag: result.etag ?? null,
+      last_modified: result.lastModified ?? null,
     }),
   });
 

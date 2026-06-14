@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { OpportunitySchema, type BusinessProfile, type Opportunity } from "../schemas/index.js";
 
 // Partial schema for raw LLM output — quadrant/priority are computed later.
@@ -13,7 +14,7 @@ import {
   IDENTIFY_OPPS_SYSTEM,
   buildIdentifyOppsPrompt,
 } from "../prompts/identify-opps.js";
-import { buildCatalogPrefix } from "../prompts/map-tools.js";
+import { buildSystemPrefix } from "../prompts/system-prefix.js";
 import type { ScoutGraphState } from "../checkpoint/types.js";
 import type { NodeDeps } from "./types.js";
 import { extractUsage, firstTextContent } from "./types.js";
@@ -35,7 +36,6 @@ export async function identifyOppsNode(
     };
   }
 
-  const catalogPrefix = buildCatalogPrefix();
   const userPrompt = buildIdentifyOppsPrompt(profile, markdown);
 
   let lastError: string | null = null;
@@ -51,8 +51,10 @@ export async function identifyOppsNode(
       model: MODEL,
       max_tokens: 4096,
       system: [
-        { type: "text", text: catalogPrefix + "\n\n" + IDENTIFY_OPPS_SYSTEM, cache_control: { type: "ephemeral" } },
+        { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
+        { type: "text", text: IDENTIFY_OPPS_SYSTEM },
       ],
+      output_config: { format: zodOutputFormat(OpportunitiesSchema) },
       messages: [{ role: "user", content: correctionPrefix + userPrompt }],
     });
 

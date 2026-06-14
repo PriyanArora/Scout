@@ -44,6 +44,13 @@ describe("parseStructuredOutput", () => {
     }
   });
 
+  it("repairs a max_tokens-truncated array before parsing (jsonrepair safety net)", () => {
+    const ItemsSchema = z.array(z.object({ a: z.number() }));
+    // Simulates an LLM response cut off mid-array by max_tokens.
+    const truncated = '[{"a":1},{"a":2';
+    expect(parseStructuredOutput(truncated, ItemsSchema)).toEqual([{ a: 1 }, { a: 2 }]);
+  });
+
   it("throws VALIDATION_ERROR when schema does not match", () => {
     try {
       parseStructuredOutput('{"x":"not-a-number","y":1}', PointSchema);

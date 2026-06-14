@@ -2,15 +2,11 @@
 // Maps ranked opportunities to tools from NorthBound's grounded catalog.
 
 import type { Opportunity } from "../schemas/index.js";
-import { CATALOG_IDS } from "../utils/catalog.js";
 
-export function buildCatalogPrefix(): string {
-  return `NorthBound Advisory tool catalog IDs (use ONLY these, no others):\n${[...CATALOG_IDS].join(", ")}`;
-}
-
-export const MAP_TOOLS_SYSTEM_SUFFIX = `
-
-You are a solutions architect. For each opportunity, select 1–3 tool IDs from the catalog that best address it. Use ONLY IDs from the catalog above.
+// The grounded catalog now lives in the shared system prefix
+// (`prompts/system-prefix.ts`) so it caches across nodes; this suffix is the
+// map_tools-specific instruction block that follows the cache breakpoint.
+export const MAP_TOOLS_SYSTEM_SUFFIX = `You are a solutions architect. For each opportunity, select 1–3 tool IDs from the grounded catalog that best address it. Use ONLY ids from the catalog in your instructions.
 
 Output ONLY a valid JSON array. Each object:
 {

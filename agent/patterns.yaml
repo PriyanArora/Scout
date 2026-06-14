@@ -1,0 +1,141 @@
+# Scout reference-architecture patterns — hand-curated, grounded in:
+#   - Enterprise Integration Patterns (Hohpe & Woolf; names free, Camel docs Apache-2.0)
+#   - Workflow Patterns (van der Aalst et al., 2003) for the `control_flow` layer
+#   - microservices.io (Richardson) — NAMES ONLY for integration_pattern (text is © all-rights-reserved)
+#
+# Each entry maps an opportunity type to a named pattern, a control-flow skeleton
+# (which maps 1:1 onto n8n graph primitives), an n8n archetype, and the catalog
+# tools likely to deliver it. `catalog_tools` reference ONLY canonical catalog ids
+# (agent/catalog.yaml / agent/src/catalog/data.ts) — enforced by patterns.test.ts.
+#
+# control_flow vocabulary (Workflow Patterns -> n8n):
+#   sequence          -> linear chain
+#   exclusive-choice  -> IF / Switch (single branch taken)
+#   parallel-split    -> multiple outgoing connections (fan-out)
+#   synchronization   -> Merge node (join parallel branches)
+#   simple-merge      -> Merge node (join alternative branches)
+#
+# pillars use the canonical short spelling (e.g. "Cybersecurity & Risk").
+#
+# This file is the human-readable spec; agent/src/patterns/data.ts is the in-code
+# mirror consumed by the agent. A drift test keeps the two in lockstep.
+
+- id: intake-triage
+  name: Intake & Triage                       # EIP: Content-Based Router + Message Filter
+  opportunity_types: [lead routing, lead capture, support triage, form intake, ticket routing]
+  pillars: [Customer Experience & Marketing, Operations & Efficiency]
+  control_flow: exclusive-choice
+  data_flow: trigger -> classify -> route -> notify
+  n8n_archetype: form-to-crm
+  integration_pattern: ""
+  catalog_tools: [power-automate, dynamics-365, hubspot, salesforce, microsoft-teams, slack, n8n]
+
+- id: inbound-message-triage
+  name: Inbound Message Triage                # EIP: Message Filter + Content-Based Router
+  opportunity_types: [email triage, inbox automation, support classification, complaint routing]
+  pillars: [Customer Experience & Marketing, Operations & Efficiency]
+  control_flow: exclusive-choice
+  data_flow: trigger -> extract -> classify -> route -> respond
+  n8n_archetype: inbound-email-triage
+  integration_pattern: ""
+  catalog_tools: [intercom, zendesk, microsoft-teams, slack, claude-api, n8n]
+
+- id: knowledge-assistant
+  name: Knowledge Assistant (RAG)             # EIP: Content Enricher + Message Translator
+  opportunity_types: [faq automation, internal knowledge search, document q&a, self-service]
+  pillars: [Customer Experience & Marketing, Data & Decision Intelligence]
+  control_flow: sequence
+  data_flow: query -> retrieve -> ground -> answer -> cite
+  n8n_archetype: rag-faq-skeleton
+  integration_pattern: ""
+  catalog_tools: [sharepoint, pgvector, pinecone, supabase, claude-api, copilot-studio, n8n]
+
+- id: system-data-sync
+  name: System Data Sync                      # EIP: Messaging Bridge + Message Translator
+  opportunity_types: [data sync, system integration, crm sync, record replication]
+  pillars: [Operations & Efficiency, Data & Decision Intelligence]
+  control_flow: sequence
+  data_flow: trigger -> fetch -> transform -> upsert
+  n8n_archetype: webhook-enrich-store
+  integration_pattern: Transactional Outbox      # microservices.io NAME only
+  catalog_tools: [power-automate, dynamics-365, hubspot, salesforce, postgres, supabase, n8n]
+
+- id: event-enrich-store
+  name: Event Enrich & Store                  # EIP: Content Enricher
+  opportunity_types: [webhook ingestion, event enrichment, signup enrichment, data capture]
+  pillars: [Operations & Efficiency, Data & Decision Intelligence]
+  control_flow: sequence
+  data_flow: webhook -> validate -> enrich -> store
+  n8n_archetype: webhook-enrich-store
+  integration_pattern: ""
+  catalog_tools: [supabase, postgres, airtable, claude-api, hubspot, n8n]
+
+- id: scheduled-monitor-notify
+  name: Scheduled Monitor & Notify            # EIP: Polling Consumer + Recipient List
+  opportunity_types: [competitive monitoring, site monitoring, scheduled reporting, alerting]
+  pillars: [Data & Decision Intelligence, Operations & Efficiency]
+  control_flow: sequence
+  data_flow: schedule -> scrape -> summarize -> notify
+  n8n_archetype: scheduled-scrape-summarize-notify
+  integration_pattern: ""
+  catalog_tools: [jina-reader, firecrawl, claude-api, slack, microsoft-teams, notion, n8n]
+
+- id: compliance-watch
+  name: Compliance & Risk Watch               # EIP: Message Filter + Wire Tap
+  opportunity_types: [regulatory change alerting, compliance monitoring, audit logging]
+  pillars: [Cybersecurity & Risk, Operations & Efficiency]
+  control_flow: exclusive-choice
+  data_flow: schedule -> fetch -> filter-relevant -> alert -> log
+  n8n_archetype: scheduled-scrape-summarize-notify
+  integration_pattern: ""
+  catalog_tools: [jina-reader, claude-api, sharepoint, microsoft-teams, slack, n8n]
+
+- id: approval-workflow
+  name: Approval Workflow                     # EIP: Process Manager
+  opportunity_types: [approval routing, document approval, expense approval, sign-off]
+  pillars: [Operations & Efficiency]
+  control_flow: exclusive-choice
+  data_flow: submit -> route-approver -> decide -> record -> notify
+  n8n_archetype: form-to-crm
+  integration_pattern: ""
+  catalog_tools: [power-automate, power-apps, sharepoint, microsoft-teams, dataverse, n8n]
+
+- id: lead-enrichment
+  name: Lead Enrichment & Scoring             # EIP: Content Enricher + Aggregator
+  opportunity_types: [lead enrichment, lead scoring, account research, prospecting]
+  pillars: [Customer Experience & Marketing, Data & Decision Intelligence]
+  control_flow: parallel-split
+  data_flow: lead -> [enrich, score] -> synchronize -> upsert-crm
+  n8n_archetype: webhook-enrich-store
+  integration_pattern: ""
+  catalog_tools: [hubspot, salesforce, claude-api, tavily, postgres, n8n]
+
+- id: reporting-pipeline
+  name: Reporting & BI Pipeline               # EIP: Aggregator + Splitter
+  opportunity_types: [kpi reporting, dashboard automation, analytics pipeline, data marts]
+  pillars: [Data & Decision Intelligence]
+  control_flow: synchronization
+  data_flow: schedule -> [extract-sources] -> aggregate -> publish
+  n8n_archetype: scheduled-scrape-summarize-notify
+  integration_pattern: ""
+  catalog_tools: [snowflake, postgres, power-bi, metabase, microsoft-fabric, hex, n8n]
+
+- id: customer-onboarding
+  name: Customer Onboarding                   # EIP: Process Manager + Recipient List
+  opportunity_types: [client onboarding, customer onboarding, provisioning, welcome flow]
+  pillars: [Customer Experience & Marketing, Operations & Efficiency]
+  control_flow: sequence
+  data_flow: signup -> provision -> notify -> schedule-followups
+  n8n_archetype: form-to-crm
+  integration_pattern: ""
+  catalog_tools: [hubspot, dynamics-365, microsoft-teams, slack, asana, notion, n8n]
+
+- id: content-ops
+  name: Content Operations                    # EIP: Message Translator + Recipient List
+  opportunity_types: [content generation, content distribution, social automation, marketing ops]
+  pillars: [Customer Experience & Marketing, Operations & Efficiency]
+  control_flow: sequence
+  data_flow: brief -> generate -> review -> distribute
+  n8n_archetype: webhook-enrich-store
+  integration_pattern: ""
+  catalog_tools: [claude-api, notion, hubspot, slack, airtable, n8n]

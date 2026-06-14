@@ -2,12 +2,17 @@ import { z } from "zod";
 import { verifyWebhookSignature } from "../hmac.js";
 import { normalizeUrl, assertSsrfSafe, UrlValidationError } from "../url.js";
 
-const WebhookBodySchema = z.object({
-  url: z.string().min(1).max(2048),
-  notes: z.string().max(20000).default(""),
-  event: z.string().optional(),
-  data: z.record(z.string(), z.unknown()).optional(),
-});
+// .strict() rejects unexpected top-level keys (defense-in-depth — Wave 5 #21 /
+// Decision Log Area C). The permissive `data` record still allows arbitrary
+// nested payload, but the envelope shape is now locked down.
+const WebhookBodySchema = z
+  .object({
+    url: z.string().min(1).max(2048),
+    notes: z.string().max(20000).default(""),
+    event: z.string().optional(),
+    data: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
 
 export type WebhookDeps = {
   webhookSecret: string;

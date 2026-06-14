@@ -34,8 +34,10 @@ function mockMessage(text: string): Anthropic.Message {
 function makeMockDeps(): NodeDeps {
   return {
     createMessage: async (params) => {
+      // Key off the node-specific block (last text block, after the shared
+      // cacheable prefix) — the prefix mentions every report section.
       const systemText = Array.isArray(params.system)
-        ? params.system.map((s) => (s.type === "text" ? s.text : "")).join(" ")
+        ? (params.system.filter((s) => s.type === "text").at(-1)?.text ?? "")
         : String(params.system ?? "");
 
       if (systemText.includes("business profile") || systemText.includes("business analyst")) {

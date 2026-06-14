@@ -21,5 +21,12 @@ export default [
         projectService: false
       }
     }
+  },
+  {
+    // Node build/codegen scripts (e.g. agent/scripts/*.mjs).
+    files: ["**/*.mjs"],
+    languageOptions: {
+      globals: { console: "readonly", process: "readonly", URL: "readonly" }
+    }
   }
 ];

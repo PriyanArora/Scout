@@ -1,5 +1,6 @@
 import type { Opportunity } from "../schemas/index.js";
 import type { ArchetypeId } from "./types.js";
+import { selectPattern } from "../patterns/data.js";
 
 // Tool IDs that suggest specific archetypes.
 // IDs must exist in agent/catalog.yaml — toolIds are catalog-filtered upstream,
@@ -83,11 +84,16 @@ export function selectArchetype(opp: Opportunity, toolIds: string[]): ArchetypeI
     "scheduled-scrape-summarize-notify",
   ];
 
+  // Ground the choice in patterns.yaml: the matched pattern's archetype gets a
+  // strong boost, so generation is lookup-driven rather than free-form (Wave 4 #14).
+  const groundedArchetype = selectPattern(opp).n8nArchetype;
+
   let best: ArchetypeId = "webhook-enrich-store";
   let bestScore = -1;
 
   for (const a of archetypes) {
-    const s = scoreArchetype(a, opp, toolIds);
+    let s = scoreArchetype(a, opp, toolIds);
+    if (a === groundedArchetype) s += 3;
     if (s > bestScore) {
       bestScore = s;
       best = a;

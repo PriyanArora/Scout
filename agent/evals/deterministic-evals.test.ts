@@ -105,7 +105,8 @@ describe("n8n template importability", () => {
 
   it("all template files in n8n_templates/ are known archetypes", async () => {
     const files = await readdir(TEMPLATES_DIR);
-    const jsonFiles = files.filter((f) => f.endsWith(".json"));
+    // index.json is the generated offline template index (Wave 4 #16), not an archetype.
+    const jsonFiles = files.filter((f) => f.endsWith(".json") && f !== "index.json");
     expect(jsonFiles.length).toBe(archetypes.length);
     for (const f of jsonFiles) {
       expect(archetypes).toContain(f);

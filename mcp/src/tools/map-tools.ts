@@ -1,13 +1,18 @@
+// Canonical NorthBound catalog ids. Kept in lockstep with agent/src/catalog/data.ts,
+// agent/catalog.yaml, the SQL seed, and the Edge function by the drift-guard test
+// in agent/src/catalog/catalog-drift.test.ts. (Previously this list was a separate,
+// wrong catalog — a grounding-red-line violation now closed by Wave 2.)
 const CATALOG_IDS = [
-  "ms-365","ms-azure-openai","ms-copilot-studio","ms-copilot","ms-teams",
-  "ms-sharepoint","ms-onedrive","ms-exchange","ms-outlook","ms-power-apps",
-  "ms-power-automate","power-automate","ms-power-bi","ms-power-pages",
-  "ms-dynamics-crm","ms-dynamics-365","ms-azure-ai-search","ms-purview",
-  "ms-sentinel","ms-defender","ms-entra","ms-intune","microsoft-365-copilot",
-  "snowflake","n8n","zapier","make","slack","sendgrid","hubspot","salesforce",
-  "zendesk","twilio","stripe","aws-bedrock","google-vertex-ai","openai",
-  "anthropic","firecrawl","jina-reader","notion","airtable","monday",
+  "microsoft-365-copilot","copilot-studio","power-automate","power-apps","power-bi",
+  "microsoft-teams","sharepoint","dataverse","microsoft-fabric","azure-functions",
+  "azure-ai","aws-lambda","supabase","vercel","netlify","n8n","make","zapier",
+  "snowflake","postgres","airtable","metabase","hex","claude-api","openai-api",
+  "langgraph","mcp","pgvector","pinecone","jina-reader","firecrawl","tavily",
+  "dynamics-365","hubspot","salesforce","slack","notion","asana","monday","jira",
+  "github","intercom","zendesk",
 ] as const;
+
+const CATALOG_SET = new Set<string>(CATALOG_IDS);
 
 interface Opportunity {
   id: string;
@@ -59,7 +64,16 @@ Output ONLY a JSON array: [{"opportunityId":string,"toolIds":string[]}]`,
   const msg = await res.json() as { content: Array<{ type: string; text?: string }> };
   const text = msg.content.find((b) => b.type === "text")?.text ?? "[]";
 
-  return {
-    content: [{ type: "text" as const, text }],
-  };
+  // Ground the output: keep only catalog ids (grounding red line). Fall back to
+  // the raw text if it doesn't parse as the expected array.
+  try {
+    const raw = JSON.parse(text) as Array<{ opportunityId: string; toolIds: string[] }>;
+    const filtered = raw.map((m) => ({
+      opportunityId: m.opportunityId,
+      toolIds: (m.toolIds ?? []).filter((id) => CATALOG_SET.has(id)),
+    }));
+    return { content: [{ type: "text" as const, text: JSON.stringify(filtered, null, 2) }] };
+  } catch {
+    return { content: [{ type: "text" as const, text }] };
+  }
 }

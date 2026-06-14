@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { BusinessProfileSchema } from "../schemas/index.js";
 import { parseStructuredOutput, StructuredOutputError } from "../utils/parser.js";
 import { accumulateCost } from "../utils/cost.js";
@@ -6,7 +7,7 @@ import {
   PROFILE_BUSINESS_SYSTEM,
   buildProfileBusinessPrompt,
 } from "../prompts/profile-business.js";
-import { buildCatalogPrefix } from "../prompts/map-tools.js";
+import { buildSystemPrefix } from "../prompts/system-prefix.js";
 import type { ScoutGraphState } from "../checkpoint/types.js";
 import type { NodeDeps } from "./types.js";
 import { extractUsage, firstTextContent } from "./types.js";
@@ -18,7 +19,6 @@ export async function profileBusinessNode(
   markdown: string,
   deps: NodeDeps,
 ): Promise<Partial<ScoutGraphState>> {
-  const catalogPrefix = buildCatalogPrefix();
   const userPrompt = buildProfileBusinessPrompt(markdown);
 
   let lastError: string | null = null;
@@ -34,8 +34,13 @@ export async function profileBusinessNode(
       model: MODEL,
       max_tokens: 2048,
       system: [
-        { type: "text", text: catalogPrefix + "\n\n" + PROFILE_BUSINESS_SYSTEM, cache_control: { type: "ephemeral" } },
+        { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
+        { type: "text", text: PROFILE_BUSINESS_SYSTEM },
       ],
+      // Structured outputs: schema-valid by construction. zodOutputFormat strips
+      // unsupported keywords (min/max/format) and sets additionalProperties:false.
+      // parseStructuredOutput below stays as the client-side validator + jsonrepair net.
+      output_config: { format: zodOutputFormat(BusinessProfileSchema) },
       messages: [{ role: "user", content: correctionPrefix + userPrompt }],
     });
 

@@ -11,10 +11,11 @@ beforeEach(() => {
 });
 
 describe("handleMapTools", () => {
-  it("returns tool mapping JSON on success", async () => {
+  it("returns tool mapping JSON on success and filters out non-catalog ids", async () => {
     const mockResponse = [
-      { opportunityId: "email-automation", toolIds: ["ms-exchange", "ms-outlook"] },
-      { opportunityId: "data-insights", toolIds: ["snowflake", "ms-power-bi"] },
+      // microsoft-teams is canonical; made-up-tool must be filtered out (grounding).
+      { opportunityId: "email-automation", toolIds: ["microsoft-teams", "made-up-tool"] },
+      { opportunityId: "data-insights", toolIds: ["snowflake", "power-bi"] },
     ];
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
@@ -26,9 +27,12 @@ describe("handleMapTools", () => {
 
     const result = await handleMapTools({ opportunities: MOCK_OPPS });
     expect(result.isError).toBeFalsy();
-    const parsed = JSON.parse(result.content[0]!.text) as Array<{ opportunityId: string }>;
+    const parsed = JSON.parse(result.content[0]!.text) as Array<{ opportunityId: string; toolIds: string[] }>;
     expect(parsed).toHaveLength(2);
     expect(parsed[0]!.opportunityId).toBe("email-automation");
+    expect(parsed[0]!.toolIds).toContain("microsoft-teams");
+    expect(parsed[0]!.toolIds).not.toContain("made-up-tool");
+    expect(parsed[1]!.toolIds).toEqual(["snowflake", "power-bi"]);
   });
 
   it("returns error message when ANTHROPIC_API_KEY is missing", async () => {

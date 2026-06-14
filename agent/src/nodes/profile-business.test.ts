@@ -73,6 +73,25 @@ describe("profileBusinessNode", () => {
     expect(update.nextNode).toBe("identify_opportunities"); // continues to next node
   });
 
+  it("requests structured output with a subset-safe wire schema", async () => {
+    let captured: unknown;
+    const deps: NodeDeps = {
+      createMessage: async (params) => {
+        captured = params;
+        return mockMessage(VALID_PROFILE);
+      },
+    };
+    await profileBusinessNode(makeInitialState("run-1"), MARKDOWN, deps);
+
+    const p = captured as { output_config?: { format?: { schema?: unknown } } };
+    expect(p.output_config?.format).toBeDefined();
+    // The wire schema must not carry keywords the structured-outputs subset rejects.
+    const wire = JSON.stringify(p.output_config?.format?.schema ?? {});
+    for (const banned of ['"minimum"', '"maximum"', '"minLength"', '"maxLength"', '"format"']) {
+      expect(wire).not.toContain(banned);
+    }
+  });
+
   it("accumulates token usage", async () => {
     const deps: NodeDeps = {
       createMessage: async () => mockMessage(VALID_PROFILE),

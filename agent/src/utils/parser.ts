@@ -1,4 +1,5 @@
 import type { ZodTypeAny } from "zod";
+import { jsonrepair } from "jsonrepair";
 
 export class StructuredOutputError extends Error {
   constructor(
@@ -36,11 +37,17 @@ export function parseStructuredOutput<T>(text: string, schema: ZodTypeAny): T {
   try {
     parsed = JSON.parse(jsonText);
   } catch {
-    throw new StructuredOutputError(
-      "JSON.parse failed on extracted text",
-      "PARSE_ERROR",
-      jsonText,
-    );
+    // Safety net for max_tokens truncations / minor malformations: repair then
+    // re-parse before giving up (INTEGRATION_PLAN §3 Wave 1 #7, Decision Log Area E).
+    try {
+      parsed = JSON.parse(jsonrepair(jsonText));
+    } catch {
+      throw new StructuredOutputError(
+        "JSON.parse failed on extracted text (even after repair)",
+        "PARSE_ERROR",
+        jsonText,
+      );
+    }
   }
 
   const result = schema.safeParse(parsed);

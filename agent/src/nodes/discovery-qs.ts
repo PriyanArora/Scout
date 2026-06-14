@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { type BusinessProfile, type Opportunity } from "../schemas/index.js";
 import { parseStructuredOutput, StructuredOutputError } from "../utils/parser.js";
 import { accumulateCost } from "../utils/cost.js";
@@ -6,6 +7,7 @@ import {
   DISCOVERY_QS_SYSTEM,
   buildDiscoveryQsPrompt,
 } from "../prompts/discovery-qs.js";
+import { buildSystemPrefix } from "../prompts/system-prefix.js";
 import type { ScoutGraphState } from "../checkpoint/types.js";
 import type { NodeDeps } from "./types.js";
 import { extractUsage, firstTextContent } from "./types.js";
@@ -31,7 +33,11 @@ export async function discoveryQuestionsNode(
   const message = await deps.createMessage({
     model: MODEL,
     max_tokens: 1024,
-    system: DISCOVERY_QS_SYSTEM,
+    system: [
+      { type: "text", text: buildSystemPrefix(), cache_control: { type: "ephemeral" } },
+      { type: "text", text: DISCOVERY_QS_SYSTEM },
+    ],
+    output_config: { format: zodOutputFormat(QuestionsSchema) },
     messages: [{ role: "user", content: userPrompt }],
   });
 
