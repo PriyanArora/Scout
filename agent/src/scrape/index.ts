@@ -1,10 +1,9 @@
-// Scout scrape layer — layered: Jina Reader → safe direct fetch → Firecrawl (optional).
+// Scout scrape layer — layered: Jina Reader → safe direct fetch → manual.
 // Caches results in scrape_pages and returns page IDs + content hashes.
 
 import { assertSsrfSafe, normalizeUrl, type IPResolver } from "../utils/url.js";
 import { scrapeWithJina, type FetchFn } from "./jina.js";
 import { safeDirectFetch } from "./direct-fetch.js";
-import { scrapeWithFirecrawl, isFirecrawlEnabled } from "./firecrawl.js";
 import { lookupScrapeCache, insertScrapeCache } from "./cache.js";
 import type { PersistedScrapeResult, ScrapeOptions, ScrapeResult } from "./types.js";
 
@@ -60,14 +59,6 @@ export async function scrapeSite(
       }
     } catch {
       // direct fetch failed; continue with current result
-    }
-  }
-
-  if (result.lowSignal && isFirecrawlEnabled()) {
-    try {
-      result = await scrapeWithFirecrawl(normalizedUrl, fetchFn);
-    } catch {
-      // firecrawl failed; use what we have
     }
   }
 

@@ -1,10 +1,5 @@
 import type { N8nWorkflow, N8nNode, PlaceholderMap } from "./types.js";
 
-function generateUuid(): string {
-  // Use Web Crypto (compatible with Deno and Node 18+)
-  return crypto.randomUUID();
-}
-
 function fillStringPlaceholders(value: string, map: PlaceholderMap): string {
   return value.replace(/__([A-Z0-9_]+)__/g, (full, key) => {
     const mapKey = `__${key}__`;
@@ -44,14 +39,14 @@ export function mergeWorkflow(
   const nodes: N8nNode[] = template.nodes.map((node) => {
     const merged: N8nNode = {
       ...node,
-      id: generateUuid(),
+      id: crypto.randomUUID(),
       parameters: fillValue(node.parameters, placeholders) as Record<string, unknown>,
     };
     if (node.credentials) {
       merged.credentials = fillValue(node.credentials, placeholders) as Record<string, { id: string; name: string }>;
     }
     if (node.webhookId) {
-      merged.webhookId = generateUuid();
+      merged.webhookId = crypto.randomUUID();
     }
     return merged;
   });

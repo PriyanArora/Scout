@@ -3,10 +3,7 @@
 import ipaddr from "ipaddr.js";
 
 export class UrlValidationError extends Error {
-  constructor(
-    message: string,
-    public readonly code: "INVALID_URL" | "UNSAFE_SCHEME" | "PRIVATE_IP" | "REDIRECT_MISMATCH",
-  ) {
+  constructor(message: string) {
     super(message);
     this.name = "UrlValidationError";
   }
@@ -17,11 +14,11 @@ export function normalizeUrl(raw: string): string {
   const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   try {
     const u = new URL(withScheme);
-    if (u.protocol !== "https:") throw new UrlValidationError("Only HTTPS is allowed", "UNSAFE_SCHEME");
+    if (u.protocol !== "https:") throw new UrlValidationError("Only HTTPS is allowed");
     return u.href;
   } catch (err) {
     if (err instanceof UrlValidationError) throw err;
-    throw new UrlValidationError(`Invalid URL: ${raw}`, "INVALID_URL");
+    throw new UrlValidationError(`Invalid URL: ${raw}`);
   }
 }
 
@@ -81,6 +78,6 @@ export function isSafeUrl(raw: string): boolean {
 
 export function assertSsrfSafe(url: string): void {
   if (!isSafeUrl(url)) {
-    throw new UrlValidationError(`URL is not safe: ${url}`, "PRIVATE_IP");
+    throw new UrlValidationError(`URL is not safe: ${url}`);
   }
 }
