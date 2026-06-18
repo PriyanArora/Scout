@@ -58,6 +58,19 @@ export type Database = {
         Row: { id: string; org_id: string; role: string; full_name: string | null };
         Insert: Omit<Database["public"]["Tables"]["profiles"]["Row"], "id">;
       };
+      tools: {
+        Row: {
+          id: string;
+          org_id: string;
+          name: string;
+          category: string;
+          pillars: string[];
+          what_it_does: string;
+          best_for: string[];
+          enabled: boolean;
+        };
+        Insert: Omit<Database["public"]["Tables"]["tools"]["Row"], "org_id">;
+      };
     };
     Functions: Record<string, unknown>;
   };

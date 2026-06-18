@@ -50,17 +50,37 @@ export function RunList({ userId }: { userId: string }) {
     return () => { void sb.removeChannel(channel); };
   }, [userId]);
 
-  if (!runs.length) return <p>No runs yet. Start a discovery above.</p>;
-
   return (
-    <ul>
-      {runs.map((run) => (
-        <li key={run.id}>
-          <button onClick={() => router.push(`/run/${run.id}`)}>
-            {run.submitted_url} — {run.status}
-          </button>
-        </li>
-      ))}
-    </ul>
+    <section style={{ marginTop: "2.5rem" }}>
+      <h2>Recent runs</h2>
+      {!runs.length ? (
+        <div className="empty">No runs yet — start a discovery above to see it appear here live.</div>
+      ) : (
+        <ul className="opps">
+          {runs.map((run) => (
+            <li key={run.id} className="opp" style={{ cursor: "pointer" }}
+                onClick={() => router.push(`/run/${run.id}`)}>
+              <div className="row" style={{ justifyContent: "space-between" }}>
+                <span className="mono" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {run.submitted_url}
+                </span>
+                <span className={`status status--${run.status}`}>{run.status}</span>
+              </div>
+              <span className="meta">{timeAgo(run.created_at)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
+}
+
+function timeAgo(iso: string): string {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} h ago`;
+  return new Date(iso).toLocaleDateString();
 }

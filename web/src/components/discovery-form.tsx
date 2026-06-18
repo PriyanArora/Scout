@@ -38,34 +38,37 @@ export function DiscoveryForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
+    <form onSubmit={handleSubmit} className="card card--pad-lg rise">
+      <div className="field">
         <label htmlFor="url">Company website URL</label>
         <input
           id="url"
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://example.com"
+          placeholder="https://acme-logistics.com"
           required
           disabled={loading}
         />
       </div>
-      <div>
-        <label htmlFor="notes">Notes (optional)</label>
+      <div className="field">
+        <label htmlFor="notes">Pain-point notes <span className="dim">(optional)</span></label>
         <textarea
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Any context about this company..."
+          placeholder="e.g. CFO says month-end close takes 12 days across three disconnected systems; regulatory change tracking lives in a shared spreadsheet."
           disabled={loading}
           maxLength={20000}
         />
       </div>
-      <button type="submit" disabled={loading || !url.trim()}>
-        {loading ? "Starting discovery…" : "Start discovery"}
-      </button>
-      {error && <p role="alert">{error}</p>}
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <span className="meta">Runs server-side — you can close the tab and come back.</span>
+        <button type="submit" disabled={loading || !url.trim()}>
+          {loading ? "Starting discovery…" : "Run discovery"}
+        </button>
+      </div>
+      {error && <p role="alert" style={{ marginTop: "1rem" }}>{error}</p>}
     </form>
   );
 }
