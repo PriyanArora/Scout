@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PATTERNS, CONTROL_FLOWS, selectPattern } from "./data.js";
+import { PATTERNS, selectPattern } from "./data.js";
 import { CATALOG_IDS } from "../utils/catalog.js";
 import { NORTHBOUND_PILLARS } from "../prompts/system-prefix.js";
 
@@ -32,9 +32,8 @@ describe("patterns.yaml grounding", () => {
     }
   });
 
-  it("every control_flow is a Workflow-Patterns primitive and pillars are canonical", () => {
+  it("every pattern's pillars are canonical", () => {
     for (const p of PATTERNS) {
-      expect(CONTROL_FLOWS).toContain(p.controlFlow);
       for (const pillar of p.pillars) {
         expect(NORTHBOUND_PILLARS as readonly string[]).toContain(pillar);
       }

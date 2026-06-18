@@ -1,15 +1,5 @@
 export class UrlValidationError extends Error {
-  constructor(
-    message: string,
-    public readonly code:
-      | "INVALID_URL"
-      | "DISALLOWED_SCHEME"
-      | "PRIVATE_IP"
-      | "LOOPBACK"
-      | "LINK_LOCAL"
-      | "SCHEME_DOWNGRADE"
-      | "MAX_LENGTH",
-  ) {
+  constructor(message: string) {
     super(message);
     this.name = "UrlValidationError";
   }
@@ -73,21 +63,18 @@ export function isSafeIp(ip: string): boolean {
 
 export function normalizeUrl(raw: string): URL {
   if (raw.length > 2048) {
-    throw new UrlValidationError("URL exceeds 2048 characters", "MAX_LENGTH");
+    throw new UrlValidationError("URL exceeds 2048 characters");
   }
 
   let parsed: URL;
   try {
     parsed = new URL(raw);
   } catch {
-    throw new UrlValidationError(`Invalid URL: ${raw}`, "INVALID_URL");
+    throw new UrlValidationError(`Invalid URL: ${raw}`);
   }
 
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new UrlValidationError(
-      `Scheme must be http or https, got ${parsed.protocol}`,
-      "DISALLOWED_SCHEME",
-    );
+    throw new UrlValidationError(`Scheme must be http or https, got ${parsed.protocol}`);
   }
 
   // Normalize: lowercase host, remove default ports, remove fragment
@@ -112,7 +99,7 @@ export async function assertSsrfSafe(url: URL, resolver: IPResolver): Promise<vo
   const v4 = ipv4ToInt(hostname);
   if (v4 !== null || hostname.startsWith("[")) {
     if (!isSafeIp(hostname)) {
-      throw new UrlValidationError(`IP address ${hostname} is not allowed`, "PRIVATE_IP");
+      throw new UrlValidationError(`IP address ${hostname} is not allowed`);
     }
     return;
   }
@@ -120,10 +107,7 @@ export async function assertSsrfSafe(url: URL, resolver: IPResolver): Promise<vo
   const resolved = await resolver(hostname);
   for (const ip of resolved) {
     if (!isSafeIp(ip)) {
-      throw new UrlValidationError(
-        `Hostname ${hostname} resolves to disallowed IP ${ip}`,
-        "PRIVATE_IP",
-      );
+      throw new UrlValidationError(`Hostname ${hostname} resolves to disallowed IP ${ip}`);
     }
   }
 }
@@ -134,16 +118,10 @@ export async function assertSafeRedirect(
   resolver: IPResolver,
 ): Promise<void> {
   if (from.protocol === "https:" && to.protocol === "http:") {
-    throw new UrlValidationError(
-      `Redirect from HTTPS to HTTP is not allowed: ${to.href}`,
-      "SCHEME_DOWNGRADE",
-    );
+    throw new UrlValidationError(`Redirect from HTTPS to HTTP is not allowed: ${to.href}`);
   }
   if (to.protocol !== "http:" && to.protocol !== "https:") {
-    throw new UrlValidationError(
-      `Redirect target scheme must be http or https, got ${to.protocol}`,
-      "DISALLOWED_SCHEME",
-    );
+    throw new UrlValidationError(`Redirect target scheme must be http or https, got ${to.protocol}`);
   }
   await assertSsrfSafe(to, resolver);
 }

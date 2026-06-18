@@ -1,4 +1,4 @@
-export type ScrapeSource = "jina" | "direct" | "firecrawl" | "manual";
+export type ScrapeSource = "jina" | "direct" | "manual";
 
 export interface ScrapeResult {
   contentHash: string;

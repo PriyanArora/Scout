@@ -5,10 +5,7 @@
 //   header:        "x-scout-timestamp: {unix_seconds}"
 
 export class HmacError extends Error {
-  constructor(
-    message: string,
-    public readonly code: "MISSING_HEADER" | "TIMESTAMP_EXPIRED" | "SIGNATURE_MISMATCH",
-  ) {
+  constructor(message: string) {
     super(message);
     this.name = "HmacError";
   }
@@ -49,19 +46,19 @@ export async function verifyWebhookSignature(
   nowMs: number = Date.now(),
 ): Promise<void> {
   if (!signatureHeader || !timestampHeader) {
-    throw new HmacError("Missing x-scout-signature or x-scout-timestamp header", "MISSING_HEADER");
+    throw new HmacError("Missing x-scout-signature or x-scout-timestamp header");
   }
 
   const tsMs = parseInt(timestampHeader, 10) * 1000;
   if (isNaN(tsMs) || Math.abs(nowMs - tsMs) > MAX_AGE_MS) {
-    throw new HmacError("Timestamp is expired or invalid", "TIMESTAMP_EXPIRED");
+    throw new HmacError("Timestamp is expired or invalid");
   }
 
   const signed = `${VERSION}:${timestampHeader}:${rawBody}`;
   const expected = `${VERSION}=${await hmacSha256Hex(secret, signed)}`;
 
   if (!timingSafeEqual(expected, signatureHeader)) {
-    throw new HmacError("Signature mismatch", "SIGNATURE_MISMATCH");
+    throw new HmacError("Signature mismatch");
   }
 }
 

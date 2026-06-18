@@ -35,11 +35,12 @@ interface RunData {
   error: Record<string, unknown> | null;
 }
 
-function statusIcon(status: string): string {
-  if (status === "completed") return "✓";
-  if (status === "failed") return "✗";
-  if (status === "running") return "…";
-  return "·";
+const NODE_ORDER = Object.keys(NODE_LABELS);
+
+function dotGlyph(state: string): string {
+  if (state === "done") return "✓";
+  if (state === "failed") return "✕";
+  return "";
 }
 
 export function RunProgress({ runId }: { runId: string }) {
@@ -104,40 +105,69 @@ export function RunProgress({ runId }: { runId: string }) {
     return () => { void sb.removeChannel(runChannel); };
   }, [runId, loadData, router]);
 
-  if (loading) return <p>Loading…</p>;
-  if (!run) return <p>Run not found.</p>;
+  if (loading) return <div className="shell"><div className="empty">Loading run…</div></div>;
+  if (!run) return <div className="shell"><div className="empty">Run not found.</div></div>;
 
   const isTerminal = run.status === "completed" || run.status === "failed" || run.status === "cancelled";
 
+  // Latest step per node → its state. next_node marks the active node mid-run.
+  const byNode = new Map<string, RunStep>();
+  for (const s of steps) byNode.set(s.node, s);
+
+  function nodeState(node: string): "done" | "active" | "failed" | "pending" {
+    const s = byNode.get(node);
+    if (s?.status === "failed") return "failed";
+    if (s?.status === "completed") return "done";
+    if (s?.status === "running") return "active";
+    if (!isTerminal && run!.next_node === node) return "active";
+    return "pending";
+  }
+
+  const doneCount = NODE_ORDER.filter((n) => nodeState(n) === "done").length;
+
   return (
-    <div>
-      <h2>{run.submitted_url}</h2>
-      <p>Status: <strong>{run.status}</strong></p>
-
-      {run.status === "failed" && run.error && (
-        <p role="alert">Error: {String((run.error as Record<string, unknown>).message ?? run.error)}</p>
-      )}
-
-      <ul>
-        {steps.map((step) => (
-          <li key={step.id}>
-            {statusIcon(step.status)} {NODE_LABELS[step.node] ?? step.node}
-            {step.duration_ms != null && ` (${step.duration_ms}ms)`}
-          </li>
-        ))}
-        {!isTerminal && run.next_node && (
-          <li>… {NODE_LABELS[run.next_node] ?? run.next_node}</li>
-        )}
-      </ul>
-
-      {isTerminal && (
-        <div>
-          {run.status === "completed" && (
-            <button onClick={() => router.push(`/report/${runId}`)}>View report</button>
-          )}
-          <button onClick={() => router.push("/dashboard")}>Back to dashboard</button>
+    <main className="shell">
+      <div className="card card--pad-lg rise">
+        <span className="eyebrow">Live discovery</span>
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <h1 className="mono" style={{ fontSize: "1.3rem", margin: 0 }}>{run.submitted_url}</h1>
+          <span className={`status status--${run.status}`}>{run.status}</span>
         </div>
-      )}
-    </div>
+        <p className="meta">{doneCount} / {NODE_ORDER.length} steps complete · safe to close this tab</p>
+
+        {run.status === "failed" && run.error && (
+          <p role="alert">
+            {String((run.error as Record<string, unknown>).message ?? run.error)}
+          </p>
+        )}
+
+        <ol className="stepper">
+          {NODE_ORDER.map((node) => {
+            const state = nodeState(node);
+            const step = byNode.get(node);
+            return (
+              <li key={node} className={`step step--${state}`}>
+                <span className="step__dot">{dotGlyph(state)}</span>
+                <span>{NODE_LABELS[node] ?? node}</span>
+                {step?.duration_ms != null && (
+                  <span className="step__dur">{(step.duration_ms / 1000).toFixed(1)}s</span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+
+        {isTerminal && (
+          <div className="row" style={{ marginTop: "1.5rem" }}>
+            {run.status === "completed" && (
+              <button className="btn-primary" onClick={() => router.push(`/report/${runId}`)}>
+                View report
+              </button>
+            )}
+            <button className="btn-ghost" onClick={() => router.push("/dashboard")}>Back to dashboard</button>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

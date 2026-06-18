@@ -11,8 +11,16 @@ export default async function DashboardPage() {
   if (!user) redirect("/login");
 
   return (
-    <main>
-      <h1>Scout Discovery</h1>
+    <main className="shell">
+      <div className="rise" style={{ marginBottom: "1.75rem" }}>
+        <span className="eyebrow">New discovery</span>
+        <h1>Turn a client website into a deliverable</h1>
+        <p className="lead">
+          Paste a company URL and a paragraph of pain points. Scout scrapes, profiles the business,
+          ranks automation opportunities against the NorthBound catalog, and drafts a requirements
+          brief, solution design, n8n workflow, and playbook — editable before you share.
+        </p>
+      </div>
       <DiscoveryForm />
       <RunList userId={user.id} />
     </main>
