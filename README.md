@@ -1,4 +1,4 @@
-# Scout — AI Discovery Agent for NorthBound Advisory
+# Scout - AI Discovery Agent 
 
 Scout automates the NorthBound consulting discovery workflow. Give it a company URL; it produces a grounded, editable deliverable: business profile, ranked AI/automation opportunities tied to NorthBound's four delivery pillars, catalog-constrained tool mappings, requirements brief, solution design, n8n workflow template, implementation playbook, discovery questions, and readiness snapshot.
 
