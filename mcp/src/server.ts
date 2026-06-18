@@ -18,6 +18,20 @@ import { handleGetReport } from "./tools/get-report.js";
 import { handleSaveReport } from "./tools/save-report.js";
 import { handleGetCatalog, CATALOG_IDS } from "./catalog.js";
 
+// A legitimate company website URL: http(s) + a real dotted domain with an alpha
+// TLD. Rejects junk z.string().url() lets through — bare hosts ("acme"),
+// localhost, raw IPs, and non-web schemes (ftp:, file:, mailto:).
+export const websiteUrl = z
+  .string()
+  .trim()
+  .url()
+  .refine((value) => {
+    let u: URL;
+    try { u = new URL(value); } catch { return false; }
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    return /^([a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i.test(u.hostname);
+  }, "Enter a real company website URL, e.g. https://acme.com");
+
 const INSTRUCTIONS = `Scout is NorthBound Advisory's AI discovery agent. These tools are pure data
 utilities — they do no reasoning. YOU do all of it, using your own analysis.
 
@@ -89,7 +103,7 @@ export function createScoutServer(): McpServer {
       description:
         "Fetch a company web page as Markdown (keyless Jina Reader). Pure data — no analysis. Returns a small metadata header (title, lowSignal flag, char count) followed by the page text. Call this on the home/about/services pages, then YOU profile the business and identify opportunities from the text.",
       inputSchema: {
-        url: z.string().url().describe("Company website URL to scrape (https)"),
+        url: websiteUrl.describe("Company website URL to scrape (https://...)"),
       },
     },
     async ({ url }) => handleScrapeCompany({ url }),
@@ -127,7 +141,7 @@ export function createScoutServer(): McpServer {
         "Persist the full Scout report JSON to Supabase (runs + reports tables) and return the run_id plus a view_url. Call this after you have produced the complete report JSON, then give the user the view_url so they can read the formatted report. Requires Supabase write credentials.",
       inputSchema: {
         reportJson: z.record(z.string(), z.unknown()).describe("Complete Scout report JSON object"),
-        sourceUrl: z.string().url().describe("The company website URL that was discovered"),
+        sourceUrl: websiteUrl.describe("The company website URL that was discovered"),
       },
     },
     async ({ reportJson, sourceUrl }) => handleSaveReport({ reportJson, sourceUrl }),
@@ -138,7 +152,7 @@ export function createScoutServer(): McpServer {
     {
       title: "Run a full Scout discovery",
       description: "Scrape, profile, score opportunities, map tools, write playbook.",
-      argsSchema: { url: z.string().url() },
+      argsSchema: { url: websiteUrl },
     },
     ({ url }) => ({
       messages: [{

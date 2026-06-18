@@ -4,6 +4,12 @@ Scout automates the NorthBound consulting discovery workflow. Give it a company 
 
 **$0/month infrastructure.** Supabase Free + Vercel Hobby. Claude API tokens are the only marginal cost (~$0.10–$0.30 per run).
 
+> **Setup tip — set `JINA_API_KEY` before your first run.** Scraping uses the keyless
+> Jina Reader, which rate-limits **per IP**. On Vercel your function shares an egress IP,
+> so scrapes can return empty/blocked on a fresh deploy even though they work locally.
+> Grab a free key at <https://jina.ai/reader>, add it as `JINA_API_KEY` in Vercel env,
+> and redeploy — discovery then works on the first go. Still $0 (free tier).
+
 ## How It Works
 
 ```
@@ -123,6 +129,7 @@ supabase db seed
 | `SCOUT_WEBHOOK_SECRET` | Yes | HMAC secret for `/api/webhook/scout` |
 | `AGENT_INTERNAL_SECRET` | Yes | Internal auth for Edge Function invocations |
 | `PUBLIC_APP_URL` | Yes | Canonical app URL (e.g. `https://scout.vercel.app`) |
+| `JINA_API_KEY` | Recommended | Lifts the keyless Jina per-IP rate limit so scraping works on the first run in prod (free tier). See setup tip above. |
 | `DATABASE_URL` | Local dev | `postgresql://` URL for migrations and eval runner |
 | `FIRECRAWL_API_KEY` | Optional | Firecrawl fallback scraper |
 | `N8N_WEBHOOK_URL` | Optional | n8n instance for companion workflow |

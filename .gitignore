@@ -43,6 +43,8 @@ Thumbs.db
 # Local assistant context
 claude/
 CLAUDE.md
+working.md
+HANDOFF.md
 
 # Generated exports
 exports/

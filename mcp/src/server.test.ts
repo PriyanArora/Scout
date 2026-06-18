@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { createScoutServer } from "./server.js";
+import { createScoutServer, websiteUrl } from "./server.js";
 
 // Spin up the Scout MCP server and a client linked by an in-memory transport —
 // a protocol-level round-trip over the pure-data tool surface.
@@ -35,6 +35,15 @@ describe("Scout MCP server (InMemoryTransport round-trip)", () => {
     const parsed = JSON.parse(content[0]!.text) as { count: number; tools: Array<{ id: string }> };
     expect(parsed.count).toBe(43);
     expect(parsed.tools.map((t) => t.id)).toContain("slack");
+  });
+
+  it("websiteUrl accepts real sites and rejects junk", () => {
+    for (const ok of ["https://acme.com", "http://www.acme.co.uk", "https://sub.acme.io/path?q=1"]) {
+      expect(websiteUrl.safeParse(ok).success).toBe(true);
+    }
+    for (const bad of ["acme", "not a url", "http://localhost", "https://localhost:3000", "ftp://acme.com", "file:///etc/passwd", "https://192.168.0.1", "javascript:alert(1)"]) {
+      expect(websiteUrl.safeParse(bad).success).toBe(false);
+    }
   });
 
   it("rejects input that violates the Zod input schema", async () => {
