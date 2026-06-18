@@ -1,5 +1,5 @@
 // save_report — writes a Claude-produced discovery report to Supabase so it can
-// be viewed at https://scout-three-cyan.vercel.app/report/<run_id>.
+// be viewed at <PUBLIC_APP_URL>/report/<run_id>.
 // Uses service role key (server-side only, never expose to browser).
 
 import { randomUUID } from "node:crypto";
@@ -28,22 +28,25 @@ export async function handleSaveReport(args: SaveReportArgs) {
     "Content-Type": "application/json",
   };
 
-  // Resolve org_id — use the first available profile (single-tenant demo)
-  let orgId: string;
-  try {
-    const profileRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?select=org_id&limit=1`,
-      { headers },
-    );
-    if (!profileRes.ok) throw new Error(`profiles lookup ${profileRes.status}`);
-    const profiles = (await profileRes.json()) as Array<{ org_id: string }>;
-    if (!profiles.length) throw new Error("no profiles found");
-    orgId = profiles[0]!.org_id;
-  } catch (err) {
-    return {
-      content: [{ type: "text" as const, text: `Failed to resolve org_id: ${String(err)}` }],
-      isError: true,
-    };
+  // Resolve org_id — prefer the configured default (same env the webhook uses);
+  // fall back to the first profile for a single-tenant demo deploy.
+  let orgId = process.env.WEBHOOK_DEFAULT_ORG_ID ?? "";
+  if (!orgId) {
+    try {
+      const profileRes = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?select=org_id&limit=1`,
+        { headers },
+      );
+      if (!profileRes.ok) throw new Error(`profiles lookup ${profileRes.status}`);
+      const profiles = (await profileRes.json()) as Array<{ org_id: string }>;
+      if (!profiles.length) throw new Error("no profiles found");
+      orgId = profiles[0]!.org_id;
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Failed to resolve org_id: ${String(err)}` }],
+        isError: true,
+      };
+    }
   }
 
   const runId = randomUUID();
@@ -106,12 +109,13 @@ export async function handleSaveReport(args: SaveReportArgs) {
     };
   }
 
+  const appUrl = process.env.PUBLIC_APP_URL ?? "https://scout-three-cyan.vercel.app";
   return {
     content: [{
       type: "text" as const,
       text: JSON.stringify({
         run_id: runId,
-        view_url: `https://scout-three-cyan.vercel.app/report/${runId}`,
+        view_url: `${appUrl}/report/${runId}`,
       }),
     }],
   };

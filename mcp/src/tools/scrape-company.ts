@@ -22,9 +22,15 @@ export async function handleScrapeCompany(args: ScrapeArgs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), JINA_TIMEOUT_MS);
 
+  // Keyless by default ($0). If JINA_API_KEY is set, send it as a Bearer token —
+  // unlocks the higher free-tier rate limit so live-demo scrapes aren't throttled.
+  const headers: Record<string, string> = { Accept: "text/markdown, text/plain, */*" };
+  const jinaKey = process.env.JINA_API_KEY;
+  if (jinaKey) headers.Authorization = `Bearer ${jinaKey}`;
+
   try {
     const res = await fetch(`https://r.jina.ai/${encodeURIComponent(url)}`, {
-      headers: { Accept: "text/markdown, text/plain, */*" },
+      headers,
       signal: controller.signal,
     });
 

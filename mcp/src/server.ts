@@ -124,7 +124,7 @@ export function createScoutServer(): McpServer {
     {
       title: "Save a discovery report",
       description:
-        "Persist the full Scout report JSON to Supabase (runs + reports tables) and return the run_id. Call this after you have produced the complete report JSON. The user can then view the formatted report at https://scout-three-cyan.vercel.app/report/<run_id>. Requires Supabase write credentials.",
+        "Persist the full Scout report JSON to Supabase (runs + reports tables) and return the run_id plus a view_url. Call this after you have produced the complete report JSON, then give the user the view_url so they can read the formatted report. Requires Supabase write credentials.",
       inputSchema: {
         reportJson: z.record(z.string(), z.unknown()).describe("Complete Scout report JSON object"),
         sourceUrl: z.string().url().describe("The company website URL that was discovered"),

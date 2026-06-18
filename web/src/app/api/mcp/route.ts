@@ -28,6 +28,6 @@ async function handle(req: Request): Promise<Response> {
   return transport.handleRequest(req);
 }
 
+// Stateless: GET (SSE probe) + POST (JSON-RPC). No DELETE — no sessions to terminate.
 export const GET = handle;
 export const POST = handle;
-export const DELETE = handle;

@@ -18,11 +18,11 @@ afterEach(() => {
 });
 
 describe("Scout MCP server (InMemoryTransport round-trip)", () => {
-  it("lists exactly the three pure-data tools", async () => {
+  it("lists exactly the four pure-data tools", async () => {
     const client = await connectClient();
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["get_catalog", "get_report", "scrape_company"]);
+    expect(names).toEqual(["get_catalog", "get_report", "save_report", "scrape_company"]);
     const scrape = tools.find((t) => t.name === "scrape_company")!;
     expect(scrape.inputSchema.type).toBe("object");
     expect(scrape.inputSchema.properties).toHaveProperty("url");
