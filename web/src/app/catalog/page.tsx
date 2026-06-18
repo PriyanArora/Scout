@@ -33,15 +33,14 @@ export default async function CatalogPage() {
         <span className="eyebrow">Grounding catalog</span>
         <h1>Tool catalog <span className="dim">({list.length})</span></h1>
         <p className="lead">
-          Every recommendation Scout makes is grounded in this catalog — it will never propose a tool
+          Every recommendation Scout makes is grounded in this catalog. It will never propose a tool
           that isn&apos;t listed here. Each opportunity is mapped to a primary tool plus alternatives.
         </p>
       </div>
 
       {list.length === 0 ? (
         <div className="empty">
-          No tools loaded. The catalog is seeded into Supabase on deploy (43 tools) — run the seed step,
-          then refresh.
+          No tools loaded. The catalog is seeded into Supabase on deploy (43 tools). Run the seed step and refresh.
         </div>
       ) : (
         <div className="stack">

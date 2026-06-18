@@ -51,8 +51,13 @@ describe("catalog single source (no drift across representations)", () => {
     expect(blockIds).toEqual(canonical);
   });
 
-  it("MCP map-tools CATALOG_IDS matches the canonical source", () => {
-    const ids = idsInArrayLiteral(read("mcp/src/tools/map-tools.ts"), "CATALOG_IDS");
+  it("MCP catalog ids match the canonical source", () => {
+    // mcp/src/catalog.ts mirrors data.ts as an array of object literals; pull the
+    // `id:` field from each entry.
+    const src = read("mcp/src/catalog.ts");
+    const block = /CATALOG_TOOLS[\s\S]*?=\s*\[([\s\S]*?)\];/.exec(src);
+    if (!block) throw new Error("CATALOG_TOOLS array literal not found in mcp/src/catalog.ts");
+    const ids = matchAll(/id:\s*"([a-z0-9-]+)"/g, block[1]!).sort();
     expect(ids).toEqual(canonical);
   });
 });

@@ -4,12 +4,8 @@
       "command": "node",
       "args": ["mcp/dist/index.js"],
       "env": {
-        "SCOUT_WEBHOOK_URL": "${SCOUT_WEBHOOK_URL}",
-        "SCOUT_WEBHOOK_SECRET": "${SCOUT_WEBHOOK_SECRET}",
-        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
         "SUPABASE_URL": "${SUPABASE_URL}",
-        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}",
-        "PUBLIC_APP_URL": "${PUBLIC_APP_URL}"
+        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
       }
     }
   }

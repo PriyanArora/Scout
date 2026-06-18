@@ -1,0 +1,6 @@
+{
+  "installCommand": "npm install",
+  "buildCommand": "npm run build -w @scout/web",
+  "outputDirectory": "web/.next",
+  "framework": "nextjs"
+}

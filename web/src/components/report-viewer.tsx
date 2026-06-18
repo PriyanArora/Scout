@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { N8nActions } from "@/components/n8n-actions";
 import type { Database } from "@/lib/db-types";
 
 type ReportRow = Database["public"]["Tables"]["reports"]["Row"];
@@ -32,8 +33,8 @@ function StructuredView({ data }: { data: Record<string, unknown> }) {
 
 function renderObj(v: unknown): string {
   const o = v as Record<string, unknown>;
-  if (o.name && o.role) return `${o.name} — ${o.role}`;
-  return Object.values(o).filter((x) => typeof x !== "object").join(" — ") || JSON.stringify(o);
+  if (o.name && o.role) return `${o.name}: ${o.role}`;
+  return Object.values(o).filter((x) => typeof x !== "object").join(", ") || JSON.stringify(o);
 }
 
 function humanize(key: string): string {
@@ -141,9 +142,9 @@ export function ReportViewer({ report, runId }: ReportViewerProps) {
           <section>
             <h2>Business profile</h2>
             <dl>
-              <div><dt>Industry</dt><dd>{profile.industry ?? "—"}</dd></div>
+              <div><dt>Industry</dt><dd>{profile.industry ?? "-"}</dd></div>
               {profile.size && <div><dt>Size</dt><dd>{profile.size}</dd></div>}
-              <div><dt>Overview</dt><dd>{profile.description ?? "—"}</dd></div>
+              <div><dt>Overview</dt><dd>{profile.description ?? "-"}</dd></div>
             </dl>
             {profile.primaryServices && profile.primaryServices.length > 0 && (
               <>
@@ -223,14 +224,15 @@ export function ReportViewer({ report, runId }: ReportViewerProps) {
             <h2>n8n workflow template</h2>
             <p className="meta">
               {topWorkflow.archetype ? <>Archetype: <strong>{String(topWorkflow.archetype)}</strong> · </> : null}
-              Validated JSON — imports into n8n 1.88.0 with credential placeholders.
+              Validated JSON. Imports into n8n 1.88.0 with credential placeholders.
             </p>
-            <details>
+            <N8nActions workflow={topWorkflow} filename="scout-workflow" />
+            <details style={{ marginTop: "0.75rem" }}>
               <summary>View workflow JSON</summary>
               <pre>{JSON.stringify(topWorkflow, null, 2)}</pre>
             </details>
             <ol style={{ marginTop: "0.75rem" }}>
-              <li>Import the workflow JSON into your n8n instance</li>
+              <li>Open in n8n (or import the .json), then paste onto the canvas</li>
               <li>Replace all <code>__PLACEHOLDER__</code> values with your credentials</li>
               <li>Activate the workflow</li>
             </ol>

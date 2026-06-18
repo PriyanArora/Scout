@@ -1,8 +1,8 @@
 /* ============================================================================
    Scout — dark design system (vanilla CSS, zero runtime deps)
-   NorthBound Advisory · Linear/Vercel-tier restraint, one accent, semantic
-   pillar + quadrant colors. Fonts (Geist / Geist Mono) loaded via next/font
-   and exposed as --font-sans / --font-mono in layout.tsx.
+   Linear/Vercel-tier restraint, one accent, semantic pillar + quadrant colors.
+   Fonts loaded via next/font in layout.tsx and exposed as CSS vars:
+   --font-sans (PP Right Grotesk), --font-logo (Bebas Neue), --font-mono (Geist Mono).
    ============================================================================ */
 
 :root {
@@ -32,7 +32,7 @@
   --warn: #f0c674;
   --err: #f08a82;
 
-  /* NorthBound pillars */
+  /* automation pillars */
   --pill-cx: #f0a6b8;       /* Customer Experience & Marketing */
   --pill-risk: #f0b07a;     /* Cybersecurity & Risk */
   --pill-ops: #6fd3c4;      /* Operations & Efficiency */
@@ -56,6 +56,7 @@
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-logo: "Bebas Neue", var(--font-sans);
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
 
   color-scheme: dark;
@@ -144,9 +145,13 @@ main { display: block; }
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  gap: 0.5rem;
+  font-family: var(--font-logo);
+  font-weight: 400;
+  font-size: 1.45rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--text);
 }
 .brand:hover { text-decoration: none; }
@@ -508,6 +513,64 @@ details > summary:hover { color: var(--text); }
   article > section { padding: 1.25rem; }
   .brand__sub, .site-header__spacer + .nav { display: none; }
 }
+
+/* ============================================================================
+   Live interactive session (HITL discovery)
+   ============================================================================ */
+.field { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+.field > span { font-size: 0.85rem; color: var(--text-dim); }
+
+.live-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) 1.15fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+.live-col { display: flex; flex-direction: column; gap: 1.25rem; }
+@media (max-width: 820px) { .live-grid { grid-template-columns: 1fr; } }
+
+.opp-list { display: grid; gap: 0.75rem; margin-top: 1rem; }
+.opp-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.9rem 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), background 0.18s var(--ease);
+}
+.opp-card:hover { border-color: var(--border-strong); }
+.opp-card--on { border-color: var(--accent-line); background: var(--accent-dim); }
+.opp-card input { width: auto; margin-top: 0.25rem; }
+
+.badge--quick-win { color: #5fd0c0; }
+.badge--strategic { color: #7aa2f7; }
+.badge--fill-in   { color: #e0af68; }
+.badge--thankless { color: #f7768e; }
+
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.chat-msg {
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--r-sm);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  border: 1px solid var(--border);
+}
+.chat-msg--user { background: var(--surface-3); align-self: flex-end; max-width: 85%; }
+.chat-msg--assistant { background: var(--surface); align-self: flex-start; max-width: 95%; }
+
+.n8n-actions { margin-top: 1rem; }
 
 /* ============================================================================
    Print — the $0 "Save as PDF" floor (complements the react-pdf route).

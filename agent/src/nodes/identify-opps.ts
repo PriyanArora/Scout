@@ -91,4 +91,3 @@ export async function identifyOppsNode(
   };
 }
 
-export const _MODEL = MODEL;

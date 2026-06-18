@@ -69,4 +69,3 @@ export async function discoveryQuestionsNode(
   };
 }
 
-export const _MODEL = MODEL;
