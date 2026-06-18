@@ -9,7 +9,9 @@ export default [
       "build/**",
       "coverage/**",
       ".next/**",
-      ".vercel/**"
+      "web/.next/**",
+      ".vercel/**",
+      "**/next-env.d.ts"
     ]
   },
   js.configs.recommended,
