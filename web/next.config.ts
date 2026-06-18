@@ -4,7 +4,7 @@ const config: NextConfig = {
   experimental: {},
   // The live route imports the shared agent engine (TS source) from the
   // @scout/agent workspace package; Next must compile it.
-  transpilePackages: ["@scout/agent"],
+  transpilePackages: ["@scout/agent", "@scout/mcp"],
   // The lib/handlers use NodeNext-style explicit `.js` import specifiers (so they
   // typecheck under NodeNext and run under Vitest). Teach the Next/webpack
   // resolver to map `.js` → `.ts(x)` so the production build resolves them too.

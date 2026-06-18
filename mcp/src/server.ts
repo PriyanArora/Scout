@@ -15,6 +15,7 @@ import { z } from "zod";
 
 import { handleScrapeCompany } from "./tools/scrape-company.js";
 import { handleGetReport } from "./tools/get-report.js";
+import { handleSaveReport } from "./tools/save-report.js";
 import { handleGetCatalog, CATALOG_IDS } from "./catalog.js";
 
 const INSTRUCTIONS = `Scout is NorthBound Advisory's AI discovery agent. These tools are pure data
@@ -116,6 +117,38 @@ export function createScoutServer(): McpServer {
       },
     },
     async ({ runId }) => handleGetReport({ runId }),
+  );
+
+  server.registerTool(
+    "save_report",
+    {
+      title: "Save a discovery report",
+      description:
+        "Persist the full Scout report JSON to Supabase (runs + reports tables) and return the run_id. Call this after you have produced the complete report JSON. The user can then view the formatted report at https://scout-three-cyan.vercel.app/report/<run_id>. Requires Supabase write credentials.",
+      inputSchema: {
+        reportJson: z.record(z.string(), z.unknown()).describe("Complete Scout report JSON object"),
+        sourceUrl: z.string().url().describe("The company website URL that was discovered"),
+      },
+    },
+    async ({ reportJson, sourceUrl }) => handleSaveReport({ reportJson, sourceUrl }),
+  );
+
+  server.registerPrompt(
+    "run_discovery",
+    {
+      title: "Run a full Scout discovery",
+      description: "Scrape, profile, score opportunities, map tools, write playbook.",
+      argsSchema: { url: z.string().url() },
+    },
+    ({ url }) => ({
+      messages: [{
+        role: "user",
+        content: {
+          type: "text",
+          text: `Run a full Scout discovery on ${url}. Use scrape_company to fetch the site, get_catalog for the tool list, then produce the complete report JSON as defined in the server instructions.`,
+        },
+      }],
+    }),
   );
 
   return server;
