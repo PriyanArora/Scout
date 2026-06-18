@@ -1,33 +1,84 @@
-// Scout MCP server factory — McpServer + registerTool (Zod input schemas).
-// Modernized from the low-level Server + setRequestHandler + hand-written JSON
-// Schema (INTEGRATION_PLAN §3 Wave 2 #9 / Decision Log Area F). Stays on SDK 1.x.
-// Split from index.ts so the InMemoryTransport round-trip test can build the
-// server without spawning a stdio transport.
+// Scout MCP server — pure data utilities only.
+//
+// Design (host-does-the-reasoning): the tools NEVER call an LLM. They fetch raw
+// data (scrape a site, hand back the grounded catalog, read a stored report).
+// Claude — the host, on the user's Claude Desktop subscription — does ALL the
+// reasoning: profiling, opportunity discovery, scoring, tool mapping, workflow
+// design, playbook writing. So there is no ANTHROPIC_API_KEY anywhere in this
+// package; the only cost is the user's existing subscription tokens.
+//
+// The orchestration is steered by `instructions` below (surfaced to the model by
+// MCP hosts) plus the per-tool descriptions.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { handleRunDiscovery } from "./tools/run-discovery.js";
 import { handleScrapeCompany } from "./tools/scrape-company.js";
-import { handleMapTools } from "./tools/map-tools.js";
-import { handleGenerateWorkflow } from "./tools/generate-workflow.js";
-import { handleWritePlaybook } from "./tools/write-playbook.js";
+import { handleGetReport } from "./tools/get-report.js";
+import { handleGetCatalog, CATALOG_IDS } from "./catalog.js";
+
+const INSTRUCTIONS = `Scout is NorthBound Advisory's AI discovery agent. These tools are pure data
+utilities — they do no reasoning. YOU do all of it, using your own analysis.
+
+When the user asks to "run discovery on <company-url>", orchestrate the full
+Scout flow yourself:
+
+1. scrape_company(url) — get the site as markdown. Scrape 1–3 high-value pages
+   (home, about, services/products) if useful. If a result is flagged lowSignal,
+   say so and work from what you have.
+2. get_catalog() — load the 43 grounded NorthBound tools. You MUST map
+   opportunities ONLY to ids from this catalog. Never invent tool ids.
+3. Reason over the scraped text to produce a discovery report (schema below).
+
+Produce a single JSON object matching Scout's report schema:
+
+{
+  "businessProfile": {
+    "name", "industry", "size"?, "description",
+    "primaryServices": string[], "technologyIndicators": string[],
+    "marketPosition"?, "evidenceSnippets": string[]   // quote the scraped text
+  },
+  "opportunities": [{
+    "id": string,                  // short kebab slug
+    "title", "description",
+    "pillar": one of
+      "Customer Experience & Marketing" | "Cybersecurity & Risk" |
+      "Operations & Efficiency" | "Data & Decision Intelligence",
+    "impactScore": 1-5, "effortScore": 1-5,   // integers
+    "confidenceScore": 0-1,
+    "roiEstimate"?: string,
+    "evidenceCitations": string[],            // ground each in scraped text
+    "toolIds": string[],                      // ONLY catalog ids
+    "quadrant": "quick-win" | "strategic" | "fill-in" | "thankless",
+        // high impact + low effort = quick-win; high+high = strategic;
+        // low+low = fill-in; low impact + high effort = thankless
+    "priority": integer >= 1
+  }],
+  "topOpportunity": <the highest-priority opportunity object>,
+  "requirements": {                            // for the top opportunity
+    "opportunityId", "title", "businessObjective",
+    "scopeIn": string[], "scopeOut": string[], "constraints": string[],
+    "successCriteria": string[], "stakeholders": string[]
+  },
+  "solutionDesign": {                          // for the top opportunity
+    "opportunityId", "architecture",
+    "components": [{ "name", "role", "toolId"? }],   // toolId from catalog
+    "integrationPoints": string[], "dataFlows": string[], "riskMitigations": string[]
+  },
+  "discoveryQuestions": string[],              // open questions for the client
+  "playbook": string,                          // concise markdown implementation plan
+  "lowSignal": boolean                         // true if scrape was weak
+}
+
+Rank opportunities by impact-over-effort; set priority 1 = best. Keep every
+claim grounded in the scraped evidence — no hallucinated facts.
+
+get_report(run_id) reads a previously stored report instead of re-discovering.`;
 
 export function createScoutServer(): McpServer {
-  const server = new McpServer({ name: "scout-mcp", version: "0.1.0" });
-
-  server.registerTool(
-    "run_discovery",
-    {
-      title: "Run Scout discovery",
-      description:
-        "Run a full Scout discovery pipeline for a company URL. Returns a run_id; poll the run page for completion, then use the report.",
-      inputSchema: {
-        url: z.string().url().describe("Company website URL (must be HTTPS)"),
-        notes: z.string().optional().describe("Optional context or notes about this company"),
-      },
-    },
-    async ({ url, notes }) => handleRunDiscovery(notes === undefined ? { url } : { url, notes }),
+  const server = new McpServer(
+    { name: "scout-mcp", version: "0.2.0" },
+    { instructions: INSTRUCTIONS },
   );
 
   server.registerTool(
@@ -35,62 +86,36 @@ export function createScoutServer(): McpServer {
     {
       title: "Scrape company site",
       description:
-        "Scrape and extract content from a company website using Jina Reader. Returns markdown content.",
+        "Fetch a company web page as Markdown (keyless Jina Reader). Pure data — no analysis. Returns a small metadata header (title, lowSignal flag, char count) followed by the page text. Call this on the home/about/services pages, then YOU profile the business and identify opportunities from the text.",
       inputSchema: {
-        url: z.string().url().describe("Company website URL to scrape"),
+        url: z.string().url().describe("Company website URL to scrape (https)"),
       },
     },
     async ({ url }) => handleScrapeCompany({ url }),
   );
 
   server.registerTool(
-    "map_tools",
+    "get_catalog",
     {
-      title: "Map opportunities to catalog tools",
+      title: "Get NorthBound tool catalog",
       description:
-        "Map a list of opportunities to NorthBound's grounded tool catalog (43 tools). Returns catalog tool ids per opportunity (non-catalog ids are filtered out).",
-      inputSchema: {
-        opportunities: z
-          .array(
-            z.object({
-              id: z.string(),
-              title: z.string(),
-              pillar: z.string(),
-            }),
-          )
-          .describe("Array of opportunities to map to tools"),
-      },
+        `Return NorthBound's 43 grounded tools as structured JSON (id, name, category, whatItDoes). Pure data — no analysis. When you map opportunities to tools, use ONLY ids from this catalog (e.g. ${CATALOG_IDS.slice(0, 4).join(", ")}, …). Never invent tool ids.`,
+      inputSchema: {},
     },
-    async ({ opportunities }) => handleMapTools({ opportunities }),
+    async () => handleGetCatalog(),
   );
 
   server.registerTool(
-    "generate_n8n_workflow",
+    "get_report",
     {
-      title: "Generate n8n workflow",
+      title: "Get a stored discovery report",
       description:
-        "Select the best n8n archetype for an opportunity and generate a configured workflow template.",
+        "Read a previously stored Scout discovery report by run_id (pure Supabase read, no analysis). Use this to inspect or build on a prior run instead of re-scraping. Requires Supabase read credentials.",
       inputSchema: {
-        opportunity: z
-          .record(z.string(), z.unknown())
-          .describe("Opportunity object with id, title, description, pillar, quadrant"),
-        toolIds: z.array(z.string()).describe("Catalog tool ids mapped to this opportunity"),
+        runId: z.string().describe("Scout run id of an existing report"),
       },
     },
-    async ({ opportunity, toolIds }) => handleGenerateWorkflow({ opportunity, toolIds }),
-  );
-
-  server.registerTool(
-    "write_playbook",
-    {
-      title: "Write implementation playbook",
-      description:
-        "Generate (or fetch) an implementation playbook for the top opportunity from a discovery run.",
-      inputSchema: {
-        runId: z.string().describe("Scout run id to generate a playbook for"),
-      },
-    },
-    async ({ runId }) => handleWritePlaybook({ runId }),
+    async ({ runId }) => handleGetReport({ runId }),
   );
 
   return server;

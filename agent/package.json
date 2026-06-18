@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/live.ts",
+    "./n8n_templates/*": "./n8n_templates/*"
+  },
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

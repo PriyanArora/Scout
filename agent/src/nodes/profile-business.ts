@@ -76,7 +76,6 @@ export async function profileBusinessNode(
 
 // Export schema for fixture validation
 export { BusinessProfileSchema as ProfileSchema };
-export const _MODEL = MODEL;
 
 // Zod type alias for use in tests
 export type BusinessProfileOut = z.infer<typeof BusinessProfileSchema>;

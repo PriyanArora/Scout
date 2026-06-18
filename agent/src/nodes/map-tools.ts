@@ -90,4 +90,3 @@ export async function mapToolsNode(
   };
 }
 
-export const _MODEL = MODEL;

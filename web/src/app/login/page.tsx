@@ -31,10 +31,11 @@ export default function LoginPage() {
   return (
     <main className="shell" style={{ maxWidth: 420, paddingTop: "5rem" }}>
       <div className="card card--pad-lg rise">
-        <span className="eyebrow">NorthBound Advisory</span>
+        <span className="eyebrow">Automation discovery</span>
         <h1>Sign in to Scout</h1>
         <p className="lead" style={{ marginBottom: "1.5rem" }}>
-          Automation-discovery agent. Paste a client URL and get a grounded, editable deliverable.
+          Paste a client&apos;s URL and Scout maps their automation opportunities in real time. Pick the
+          one worth building and export a ready-to-import n8n workflow — the automation, done.
         </p>
 
         <form onSubmit={handleSubmit}>

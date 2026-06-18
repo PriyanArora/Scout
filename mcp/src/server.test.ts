@@ -4,7 +4,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createScoutServer } from "./server.js";
 
 // Spin up the Scout MCP server and a client linked by an in-memory transport —
-// the protocol-level round-trip test Scout previously lacked (Wave 2 #9).
+// a protocol-level round-trip over the pure-data tool surface.
 async function connectClient(): Promise<Client> {
   const server = createScoutServer();
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -18,46 +18,23 @@ afterEach(() => {
 });
 
 describe("Scout MCP server (InMemoryTransport round-trip)", () => {
-  it("lists all five tools with Zod-derived input schemas", async () => {
+  it("lists exactly the three pure-data tools", async () => {
     const client = await connectClient();
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual([
-      "generate_n8n_workflow",
-      "map_tools",
-      "run_discovery",
-      "scrape_company",
-      "write_playbook",
-    ]);
-    const run = tools.find((t) => t.name === "run_discovery")!;
-    expect(run.inputSchema.type).toBe("object");
-    expect(run.inputSchema.properties).toHaveProperty("url");
+    expect(names).toEqual(["get_catalog", "get_report", "scrape_company"]);
+    const scrape = tools.find((t) => t.name === "scrape_company")!;
+    expect(scrape.inputSchema.type).toBe("object");
+    expect(scrape.inputSchema.properties).toHaveProperty("url");
   });
 
-  it("calls map_tools end-to-end and filters non-catalog ids", async () => {
-    process.env.ANTHROPIC_API_KEY = "test-key";
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          content: [
-            { type: "text", text: JSON.stringify([{ opportunityId: "o1", toolIds: ["slack", "made-up"] }]) },
-          ],
-        }),
-      }),
-    );
-
+  it("get_catalog returns the 43 grounded tools (no network, no LLM)", async () => {
     const client = await connectClient();
-    const res = await client.callTool({
-      name: "map_tools",
-      arguments: { opportunities: [{ id: "o1", title: "Triage", pillar: "Operations & Efficiency" }] },
-    });
-
+    const res = await client.callTool({ name: "get_catalog", arguments: {} });
     const content = res.content as Array<{ type: string; text: string }>;
-    const parsed = JSON.parse(content[0]!.text) as Array<{ toolIds: string[] }>;
-    expect(parsed[0]!.toolIds).toContain("slack");
-    expect(parsed[0]!.toolIds).not.toContain("made-up");
+    const parsed = JSON.parse(content[0]!.text) as { count: number; tools: Array<{ id: string }> };
+    expect(parsed.count).toBe(43);
+    expect(parsed.tools.map((t) => t.id)).toContain("slack");
   });
 
   it("rejects input that violates the Zod input schema", async () => {
@@ -65,7 +42,7 @@ describe("Scout MCP server (InMemoryTransport round-trip)", () => {
     let threw = false;
     let result: Awaited<ReturnType<Client["callTool"]>> | undefined;
     try {
-      result = await client.callTool({ name: "run_discovery", arguments: { url: "not-a-valid-url" } });
+      result = await client.callTool({ name: "scrape_company", arguments: { url: "not-a-valid-url" } });
     } catch {
       threw = true;
     }

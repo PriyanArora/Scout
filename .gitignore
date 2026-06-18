@@ -40,14 +40,11 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Local assistant context (tracked — knowledge base lives in claude/)
-.agents/
-.claude/
+# Local assistant context
 claude/
 CLAUDE.md
-README.md
-.github/
 
 # Generated exports
 exports/
 *.pdf
+.vercel
